@@ -1,12 +1,12 @@
 package com.muddyhorse.cynch;
 
-import java.util.Vector;
 
 /**
  *
  */
-public class Operation implements Constants
+public class Operation
 {
+    private static final char SEPARATOR_CHAR = ',';
     private static final int  OFS_TYPE       = 0;  // where ofs == offset...
     private static final int  OFS_PATH       = 1;
     private static final int  OFS_VERSION    = 2;
@@ -18,24 +18,24 @@ public class Operation implements Constants
     private static final char TYPE_CHAR_CORE = '.';
     private static final char TYPE_CHAR_OPT  = '?';
 
-    public String             fileID;
-    public int                operation;
-    public int                type;
-    public String             localDescription;
-    public String             localPath;
-    public Double             localVersion;
-    public Double             localSize;
-    public String             remoteDescription;
-    public String             remotePath;
-    public Double             remoteVersion;
-    public Double             remoteSize;
+    private final String             fileID;
+    private Constants.OperationType                operation;
+    private Constants.DownloadType                type;
+    private String             localDescription;
+    private String             localPath;
+    private double             localVersion;
+    private double             localSize;
+    private String             remoteDescription;
+    private String             remotePath;
+    private double             remoteVersion;
+    private double             remoteSize;
 
-    //    public String   redirectPath;
+    //    private String   redirectPath;
 
     public Operation(String key) {
-        operation = OP_NOTHING;
+        operation = Constants.OperationType.nothing;
         fileID = key;
-        type = TYPE_OPTIONAL;
+        type = Constants.DownloadType.optional;
     }
 
     //
@@ -44,59 +44,152 @@ public class Operation implements Constants
     private void setTypeChar(char t) {
         switch (t) {
             case TYPE_CHAR_CRIT: // '!'
-                type = TYPE_CRITICAL;
+                type = Constants.DownloadType.critical;
             break;
-            case TYPE_CHAR_OPT: // '?'
-                type = TYPE_OPTIONAL;
+            case TYPE_CHAR_OPT:  // '?'
+                type = Constants.DownloadType.optional;
             break;
-            default: // '.'
-                type = TYPE_CORE;
+            default:             // '.'
+                type = Constants.DownloadType.core;
         } // endswitch
     }
 
     private char getTypeChar() {
         switch (type) {
-            case TYPE_CRITICAL: // '!'
+            case critical:  // '!'
                 return TYPE_CHAR_CRIT;
-            case TYPE_OPTIONAL: // '?'
+            case optional:  // '?'
                 return TYPE_CHAR_OPT;
-            default: // '.'
+            default:        // '.'
                 return TYPE_CHAR_CORE;
         } // endswitch
     }
 
-    public void loadVector(Vector v, boolean local) {
+    public void loadVector(String csv, boolean local) {
+        String[] v = csv.split(",");
+        if (v.length != 5) {
+            throw new IllegalArgumentException("For key: "+fileID+", Wrong number of values (5 expected, found "+v.length+") in Manifest entry:\n"+csv);
+        } // endif
+
         if (local) {
             // do not read type from local.
-            localPath = (String) v.elementAt(OFS_PATH);
-            localVersion = (Double) v.elementAt(OFS_VERSION);
-            localSize = (Double) v.elementAt(OFS_SIZE);
-            localDescription = (String) v.elementAt(OFS_DESC);
+            localPath = v[OFS_PATH];
+            localVersion = Double.parseDouble(v[OFS_VERSION]);
+            localSize = Double.parseDouble(v[OFS_SIZE]);
+            localDescription = v[OFS_DESC];
         } else {
-            setTypeChar(((String) v.elementAt(OFS_TYPE)).charAt(0));
-            remotePath = (String) v.elementAt(OFS_PATH);
-            remoteVersion = (Double) v.elementAt(OFS_VERSION);
-            remoteSize = (Double) v.elementAt(OFS_SIZE);
-            remoteDescription = (String) v.elementAt(OFS_DESC);
+            setTypeChar(v[OFS_TYPE].charAt(0));
+            remotePath        = v[OFS_PATH];
+            remoteVersion     = Double.parseDouble(v[OFS_VERSION]);
+            remoteSize        = Double.parseDouble(v[OFS_SIZE]);
+            remoteDescription = v[OFS_DESC];
         } // endif
     }
 
-    public Vector toVector(boolean local) {
-        Vector v = new Vector(5);
-        v.setSize(5);
-        v.setElementAt("" + getTypeChar(), OFS_TYPE); // always set type...
+    public String toVector(boolean local) {
+        StringBuilder csv = new StringBuilder();
+        csv.append(getTypeChar()).append(SEPARATOR_CHAR);
+
         if (local) {
-            v.setElementAt(localPath, OFS_PATH);
-            v.setElementAt(localVersion, OFS_VERSION);
-            v.setElementAt(localSize, OFS_SIZE);
-            v.setElementAt(localDescription, OFS_DESC);
+            csv.append(localPath).append(SEPARATOR_CHAR);
+            csv.append(localVersion).append(SEPARATOR_CHAR);
+            csv.append(localSize).append(SEPARATOR_CHAR);
+            csv.append(localDescription).append(SEPARATOR_CHAR);
         } else {
-            v.setElementAt(remotePath, OFS_PATH);
-            v.setElementAt(remoteVersion, OFS_VERSION);
-            v.setElementAt(remoteSize, OFS_SIZE);
-            v.setElementAt(remoteDescription, OFS_DESC);
+            csv.append(remotePath).append(SEPARATOR_CHAR);
+            csv.append(remoteVersion).append(SEPARATOR_CHAR);
+            csv.append(remoteSize).append(SEPARATOR_CHAR);
+            csv.append(remoteDescription).append(SEPARATOR_CHAR);
         } // endif
-        return v;
+
+        return csv.toString();
+    }
+
+    //
+    // Data methods:
+    //
+    public String getFileID() {
+        return fileID;
+    }
+
+    public String getLocalDescription() {
+        return localDescription;
+    }
+
+    public void setLocalDescription(String localDescription) {
+        this.localDescription = localDescription;
+    }
+
+    public String getLocalPath() {
+        return localPath;
+    }
+
+    public void setLocalPath(String localPath) {
+        this.localPath = localPath;
+    }
+
+    public double getLocalSize() {
+        return localSize;
+    }
+
+    public void setLocalSize(double localSize) {
+        this.localSize = localSize;
+    }
+
+    public double getLocalVersion() {
+        return localVersion;
+    }
+
+    public void setLocalVersion(double localVersion) {
+        this.localVersion = localVersion;
+    }
+
+    public Constants.OperationType getOperation() {
+        return operation;
+    }
+
+    public void setOperation(Constants.OperationType operation) {
+        this.operation = operation;
+    }
+
+    public String getRemoteDescription() {
+        return remoteDescription;
+    }
+
+    public void setRemoteDescription(String remoteDescription) {
+        this.remoteDescription = remoteDescription;
+    }
+
+    public String getRemotePath() {
+        return remotePath;
+    }
+
+    public void setRemotePath(String remotePath) {
+        this.remotePath = remotePath;
+    }
+
+    public double getRemoteSize() {
+        return remoteSize;
+    }
+
+    public void setRemoteSize(double remoteSize) {
+        this.remoteSize = remoteSize;
+    }
+
+    public double getRemoteVersion() {
+        return remoteVersion;
+    }
+
+    public void setRemoteVersion(double remoteVersion) {
+        this.remoteVersion = remoteVersion;
+    }
+
+    public Constants.DownloadType getType() {
+        return type;
+    }
+
+    public void setType(Constants.DownloadType type) {
+        this.type = type;
     }
 
     //
@@ -105,10 +198,22 @@ public class Operation implements Constants
     @Override
     public String toString() {
         StringBuffer sb = new StringBuffer();
-        sb.append("{").append(fileID).append(",").append(OP_DESCRIPTIONS[operation]).append(",").append(
+        sb.append("{").append(fileID).append(",").append(operation.getDescription()).append(",").append(
                 localDescription).append(",").append(localPath).append(",").append(localSize).append(",").append(
                 localVersion).append(",").append(remoteVersion).append(",").append(remotePath).append(",").append(
                 remoteSize).append(",").append(remoteDescription).append("}");
         return sb.toString();
+    }
+
+    /**
+     * copies path, size, and description from remote to local.  Does not copy version or type.
+     *
+     */
+    public void copyRemoteToLocal() {
+        // copy remote info to local info:
+        //  localPath = redirectPath; // TODO implement redirected paths one day...
+        setLocalPath(getRemotePath());
+        setLocalSize(getRemoteSize());
+        setLocalDescription(getRemoteDescription());
     }
 }

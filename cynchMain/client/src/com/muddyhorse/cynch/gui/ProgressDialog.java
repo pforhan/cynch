@@ -1,17 +1,11 @@
 package com.muddyhorse.cynch.gui;
 
-// java core imports:
 import java.applet.Applet;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 
 import com.muddyhorse.cynch.Constants;
 import com.muddyhorse.cynch.Operation;
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
 
 /**
  *
@@ -218,7 +212,7 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     //
     public void actionPerformed(ActionEvent e) {
         if (Constants.CMD_CANCEL.equals(e.getActionCommand())) {
-            //System.out.println("dupd.aP: cancel pressed! @"+System.currentTimeMillis());
+            //System.out.println("pd.aP: cancel pressed! @"+System.currentTimeMillis());
             interrupted = true;
         } // endif
     }
@@ -227,7 +221,7 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     // Implementation of the DUProgressListener interface:
     //
     public void starting(Operation op) {
-        //System.out.println("dupd.s: starting op "+op);
+        //System.out.println("pd.s: starting op "+op);
         String desc = op.remoteDescription == null ? op.localDescription : op.remoteDescription;
         rsize = op.remoteSize == null ? 0 : op.remoteSize.intValue();
 
@@ -239,14 +233,14 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
 
     public void progress(String name, String desc, int amount, int total) throws InterruptedException {
         if (!interrupted) {
-            //System.out.println("dupd.p: n:"+name+"; d:"+desc+"; a="+amount+"; t="+total);
+            //System.out.println("pd.p: n:"+name+"; d:"+desc+"; a="+amount+"; t="+total);
             setProgress(thisProg, thisProgTxt, amount, total);
             setProgress(ttlProg, ttlProgTxt, currentOp + amount, totalOps);
             /*
              try {
              Thread.sleep(150);
              } catch (InterruptedException ex) {
-             System.out.println("dupd.r: caught InterruptedException!");
+             System.out.println("pd.r: caught InterruptedException!");
              } // endtry
              //*/
         } else {
@@ -259,9 +253,9 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
         setProgress(ttlProg, ttlProgTxt, currentOp, totalOps);
         /*
          if (success) {
-         System.out.println("dupd.f: successfully finished op "+op);
+         System.out.println("pd.f: successfully finished op "+op);
          } else {
-         System.out.println("dupd.f: UNsuccessfully finished op "+op);
+         System.out.println("pd.f: UNsuccessfully finished op "+op);
          } // endif
          //*/
     }

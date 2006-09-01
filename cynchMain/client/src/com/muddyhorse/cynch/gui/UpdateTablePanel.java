@@ -21,9 +21,9 @@ import java.util.Vector;
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
 import com.muddyhorse.cynch.Operation;
-import com.muddyhorse.cynch.DynamicUpdateUtils;
+import com.muddyhorse.cynch.UpdateUtils;
 
-public class UpdateTablePanel extends java.awt.Panel implements //common.du.DUProgressListener,
+public class UpdateTablePanel extends java.awt.Panel implements 
         com.muddyhorse.cynch.gui.SelectedOps.Listener, com.muddyhorse.cynch.Constants
 {
     /**
@@ -180,7 +180,7 @@ public class UpdateTablePanel extends java.awt.Panel implements //common.du.DUPr
          buildOpsTable(opSets[OP_DELETE  ],gbc,pnl,l);
          buildOpsTable(opSets[OP_NOTHING ],gbc,pnl,l);
          //*/
-        Vector[] opSets = DynamicUpdateUtils.sortOperationsByType(opsTable, null);
+        Vector[] opSets = UpdateUtils.sortOperationsByType(opsTable, null);
         buildOpsTable(opSets[TYPE_CRITICAL], gbc, pnl, l);
         buildOpsTable(opSets[TYPE_CORE], gbc, pnl, l);
         buildOpsTable(opSets[TYPE_OPTIONAL], gbc, pnl, l);
@@ -329,23 +329,14 @@ public class UpdateTablePanel extends java.awt.Panel implements //common.du.DUPr
     // Utility methods:
     //
     public void refreshTotal() {
-        int ttl = DynamicUpdateUtils.countDownloadSize(config, TYPE_CRITICAL, null)
-                + DynamicUpdateUtils.countDownloadSize(config, TYPE_CORE, null)
-                + DynamicUpdateUtils.countDownloadSize(config, TYPE_ALL, selOps.getSelectedIDs());
+        int ttl = UpdateUtils.countDownloadSize(config, TYPE_CRITICAL, null)
+                + UpdateUtils.countDownloadSize(config, TYPE_CORE, null)
+                + UpdateUtils.countDownloadSize(config, TYPE_ALL, selOps.getSelectedIDs());
         txtTtl.setText(snf.format(ttl / 1024));
     }
 
-    /*
-     //
-     // Implementation of the DUProgressListener interface:
-     //
-     public void progress(String name, String desc, int amount, int total) {
-     System.out.println("dup.p: n:"+name+"; d:"+desc+"; a="+amount+"; t="+total);
-     }
-     //*/
-
     //
-    // Implementation of the DUSelectedOps.Listener interface:
+    // Implementation of the SelectedOps.Listener interface:
     //
     public void selectedIDsChanged(boolean anySelected) {
         refreshTotal();

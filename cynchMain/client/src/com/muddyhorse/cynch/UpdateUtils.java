@@ -1,14 +1,18 @@
 package com.muddyhorse.cynch;
 
-import java.awt.*;
-import java.util.*;
+import java.awt.Frame;
 import java.io.*;
-import java.net.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  *
  */
-public class DynamicUpdateUtils implements Constants
+public class UpdateUtils implements Constants
 {
 
     //
@@ -16,14 +20,13 @@ public class DynamicUpdateUtils implements Constants
     //
     private static final int BUFFER_SIZE = 10000;
 
-    private static Hashtable parms       = new Hashtable();
+//    private static Map<String, String> parms       = new HashMap<String, String>();
 
     private static Frame     mainframe;
 
     //
     // File Retrieval methods:
     //
-
     public static String getStringFromClasspath(Class base, String filename) {
         try {
             InputStream is = base.getResourceAsStream(filename);
@@ -42,8 +45,8 @@ public class DynamicUpdateUtils implements Constants
     }
 
     /** Read the contents of a webpage at the given address */
-    public static String getStringFromURL(String address) throws MalformedURLException {
-        return getStringFromURL(new URL(address));
+    public static String getStringFromURL(String urlString) throws MalformedURLException {
+        return getStringFromURL(new URL(urlString));
     }
 
     /** Read the contents of a webpage indicated by a URL */
@@ -160,14 +163,14 @@ public class DynamicUpdateUtils implements Constants
     }
 
     /** Split the file, line by line, into key/value pairs */
-    public static Hashtable<String, Serializable> stringToHashtable(String file) {
+    public static Map<String, String> stringToHashtable(String file) {
         if (file == null) {
             return null;
         }
 
         String sansComments = eraseComments(file);
         int pos = 0, count = sansComments.length();
-        Hashtable<String, Serializable> retval = new Hashtable<String, Serializable>();
+        Map<String, String> retval = new HashMap<String, String>();
 
         // Split the file, line by line, into key/value pairs
         while (pos < count) {
@@ -186,26 +189,26 @@ public class DynamicUpdateUtils implements Constants
                 // otherwise break comma separated ones into Vectors.
                 // If they can be, items are inserted as Doubles, failing
                 // that, as Strings.
-                int comma = value.indexOf(",");
-                if (comma == -1) {
-                    try {
-                        retval.put(key, new Double(value));
-                    } catch (NumberFormatException nfe) {
+//                int comma = value.indexOf(",");
+//                if (comma == -1) {
+//                    try {
+//                        retval.put(key, new Double(value));
+//                    } catch (NumberFormatException nfe) {
                         retval.put(key, value);
-                    } // endtry
-                } else {
-                    Vector<Comparable> v = new Vector<Comparable>();
-                    StringTokenizer values = new StringTokenizer(value, ",");
-                    while (values.hasMoreTokens()) {
-                        String s = values.nextToken();
-                        try {
-                            v.addElement(new Double(s));
-                        } catch (NumberFormatException nfe) {
-                            v.addElement(s.trim());
-                        } // endtry
-                    } // endwhile
-                    retval.put(key, v);
-                } // endif
+//                    } // endtry
+//                } else {
+//                    Vector<Comparable> v = new Vector<Comparable>();
+//                    StringTokenizer values = new StringTokenizer(value, ",");
+//                    while (values.hasMoreTokens()) {
+//                        String s = values.nextToken();
+//                        try {
+//                            v.addElement(new Double(s));
+//                        } catch (NumberFormatException nfe) {
+//                            v.addElement(s.trim());
+//                        } // endtry
+//                    } // endwhile
+//                    retval.put(key, v);
+//                } // endif
             } // endif
             pos += next;
         } // endwhile
@@ -214,29 +217,29 @@ public class DynamicUpdateUtils implements Constants
     }
 
     /** Write a hashtable to file */
-    public static void writeHashtable(String filename, Hashtable<String, Vector> hash) {
-        //*
+    public static void writeHashtable(String filename, Map<String, String> hash) {
         try {
             FileWriter fw = new FileWriter(filename);
-
-            for (Enumeration<String> e = hash.keys(); e.hasMoreElements();) {
-                String key = e.nextElement();
+            
+            Set<Entry<String, String>> entries = hash.entrySet();
+            for (Entry<String, String> entry : entries) {
+                String key = entry.getKey();
                 String str = key + "=";
-                Object value = hash.get(key);
+                Object value = entry.getValue();
 
-                if (value instanceof String) {
-                    str += (String) value;
-                } else {
-                    Vector v = (Vector) value;
-                    int count = v.size();
-                    for (int i = 0; i < count; i++) {
-                        //                        str += (String)v.elementAt(i);
-                        str += v.elementAt(i).toString();
-                        if (i < count - 1) {
-                            str += ",";
-                        }
-                    } // endfor
-                } // endif
+//                if (value instanceof String) {
+//                    str += (String) value;
+//                } else {
+//                    Vector v = (Vector) value;
+//                    int count = v.size();
+//                    for (int i = 0; i < count; i++) {
+//                        // str += (String)v.elementAt(i);
+//                        str += v.elementAt(i).toString();
+//                        if (i < count - 1) {
+//                            str += ",";
+//                        }
+//                    } // endfor
+//                } // endif
                 fw.write(str);
                 fw.write("\r\n");
             } // endfor
@@ -252,15 +255,16 @@ public class DynamicUpdateUtils implements Constants
      *  of operations to perform.  <STRONG>Note:</STRONG> In the process,
      *  the original remote hashtable is destroyed.
      */
-    public static Hashtable<String, Operation> compareHashtables(Hashtable local, Hashtable remote) {
-        Hashtable<String, Operation> retval = new Hashtable<String, Operation>();
+    public static Map<String, Operation> compareHashtables(Map<String, String> local, Map<String, String>remote) {
+        HashMap<String, Operation> retval = new HashMap<String, Operation>();
 
         // using the keys of the local hashtable, find out what to
         //  ignore (if it is up-to-date already), update or delete:
-        for (Enumeration e = local.keys(); e.hasMoreElements();) {
-            String key = (String) e.nextElement();
-            Object localObj = local.get(key);
-            Object remoteObj = remote.get(key);
+        Set<Entry<String, String>> localEntries = local.entrySet();
+        for (Entry<String, String> localEntry : localEntries) {
+            String key = localEntry.getKey();
+            String localObj = localEntry.getValue();
+            String remoteObj = remote.get(key);
 
             // if this is an update (ie, present in local and remote)
             //  remove from remote.
@@ -268,26 +272,23 @@ public class DynamicUpdateUtils implements Constants
                 remote.remove(key);
             }
 
-            // we are only interested in vectors, here!
-            if (!(localObj instanceof Vector)) {
-                continue;
-            }
-            Vector localVector = (Vector) localObj;
+            String localVector = localObj;
 
             Operation op = new Operation(key);
             op.loadVector(localVector, true);
 
             if (remoteObj == null) {
                 // there is no remote entry; we should delete:
-                op.operation = Constants.OP_DELETE;
+                op.setOperation(Constants.OperationType.delete);
             } else {
                 // remote entry is present; check to see if we need to update:
-                Vector remoteVector = (Vector) remoteObj;
+                String remoteVector = remoteObj;
                 op.loadVector(remoteVector, false);
+
                 // if remote version newer, mark as update
-                if (op.remoteVersion.doubleValue() > op.localVersion.doubleValue()) {
-                    op.operation = Constants.OP_UPDATE;
-                }
+                if (op.getRemoteVersion() > op.getLocalVersion()) {
+                    op.setOperation(Constants.OperationType.update);
+                } // endif
             } // endif
 
             // put the populated operation into the hashtable:
@@ -296,28 +297,21 @@ public class DynamicUpdateUtils implements Constants
 
         // Now, the remote hashtable should only contain things that
         // are NOT on the local side - these are the new downloads.
-        for (Enumeration e = remote.keys(); e.hasMoreElements();) {
-            String key = (String) e.nextElement();
-            Object remoteObj = remote.get(key);
+        Set<Entry<String, String>> remoteEntries = remote.entrySet();
+        for (Entry<String, String> remoteEntry : remoteEntries) {
+            String key = remoteEntry.getKey();
+            String remoteObj = remote.get(key);
 
             if (remoteObj != null) {
-                remote.remove(key);
-            }
+                remote.remove(key); // TODO ? does this work?
+            } // endif
 
-            if (!(remoteObj instanceof Vector)) {
-                continue;
-            }
-            Vector remoteVector = (Vector) remoteObj;
+            String remoteVector = remoteObj;
 
             Operation op = new Operation(key);
             op.loadVector(remoteVector, false);
-
-            // copy remote info to local info:
-            //            op.localPath = op.redirectPath; // one day...
-            op.localPath = op.remotePath;
-            op.localSize = op.remoteSize;
-            op.localDescription = op.remoteDescription;
-            op.operation = Constants.OP_DOWNLOAD;
+            op.copyRemoteToLocal();
+            op.setOperation(Constants.OperationType.download);
             retval.put(key, op);
         } // endfor
 
@@ -500,9 +494,12 @@ public class DynamicUpdateUtils implements Constants
                 writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
             } // endif -- not nothing
             l.finished(op, true);
+
             return true;
+
         } catch (InterruptedException ix) {
             throw ix;
+
         } catch (Exception ex) {
             System.out.println("duu:" + ex);
             //            ex.printStackTrace();
@@ -543,7 +540,7 @@ public class DynamicUpdateUtils implements Constants
      * @return the size of download and update operations, or -1 if
      *   an error occurred.
      */
-    public static int countDownloadSize(Config cfg, int type, Vector ids) {
+    public static int countDownloadSize(Config cfg, Constants.DownloadType type, Vector ids) {
         int total = 0;
         try {
             Enumeration enumer = cfg.getOperations().elements();
@@ -592,18 +589,6 @@ public class DynamicUpdateUtils implements Constants
         } catch (InterruptedException ix) {
             throw ix;
         } // endtry
-    }
-
-    public static void setParameters(Hashtable parameters) {
-        Enumeration enumer = parameters.keys();
-        while (enumer.hasMoreElements()) {
-            Object k = enumer.nextElement();
-            parms.put(k, parameters.get(k));
-        } // endwhile
-    }
-
-    public static String getParameter(String which) {
-        return (String) parms.get(which);
     }
 
     /**
@@ -741,7 +726,7 @@ public class DynamicUpdateUtils implements Constants
     /**
      * @return the number of bytes saved, -1 if error occurred
      */
-    public static int getFileFromString(String data, File local) {
+    public static int writeStringToFile(String data, File local) {
         PrintWriter fs = null;
 
         try {
@@ -749,7 +734,7 @@ public class DynamicUpdateUtils implements Constants
                 return -1;
             }
 
-            byte[] buffer = data.getBytes();
+//            byte[] buffer = data.getBytes();
             //            final int available = buffer.length;
             fs = new PrintWriter(new BufferedOutputStream(new FileOutputStream(local), BUFFER_SIZE));
             fs.print(data);

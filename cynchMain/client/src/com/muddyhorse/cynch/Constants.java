@@ -1,13 +1,5 @@
 package com.muddyhorse.cynch;
 
-// java core imports:
-// java swing imports:
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
-
 /**
  *
  */
@@ -46,28 +38,38 @@ public interface Constants
     public static final String   INI_DU_DIR          = "DUDir";
 
     // parameter settings:
-    /*
-     public static final String PARM_USER           = "user";
-     public static final String PARM_PASSWORD       = "pass";
-     public static final String PARM_TAD_ALIAS      = "tadalias";
-     //*/
-
+//     public static final String PARM_USER           = "user";
+//     public static final String PARM_PASSWORD       = "pass";
     public static final String   PARM_INI            = "ini";
-    //    public static final String PARM_INSTALL        = "install";
+//    public static final String PARM_INSTALL        = "install";
+    public static final String DEFAULT_INI_NAME    = "/cynch.ini";
 
     // Operation-specific stuff:
-    public static final int      TYPE_ALL            = -1;
-    public static final int      TYPE_CRITICAL       = 0;
-    public static final int      TYPE_CORE           = 1;
-    public static final int      TYPE_OPTIONAL       = 2;
+    public static enum DownloadType {
+        all, critical, core, optional;
+    }
+//    public static final int      TYPE_ALL            = -1;
+//    public static final int      TYPE_CRITICAL       = 0;
+//    public static final int      TYPE_CORE           = 1;
+//    public static final int      TYPE_OPTIONAL       = 2;
 
-    public static final int      OP_NOTHING          = 0;
-    public static final int      OP_DELETE           = 1;
-    public static final int      OP_UPDATE           = 2;
-    public static final int      OP_DOWNLOAD         = 3;
+    public static enum OperationType {
+        nothing("Current Version Installed"), delete("Delete (no longer needed)"), update("Update"), download("Download/Install");
+        private final String description;
+        private OperationType(String description) {
+            this.description = description;
+        }
+        public String getDescription() {
+            return description;
+        }
+    }
+//    public static final int      OP_NOTHING          = 0;
+//    public static final int      OP_DELETE           = 1;
+//    public static final int      OP_UPDATE           = 2;
+//    public static final int      OP_DOWNLOAD         = 3;
 
-    public static final String[] OP_DESCRIPTIONS     = {
-            "Current Version Installed", "Delete (no longer needed)", "Update", "Download/Install"
-                                                     };
+//    public static final String[] OP_DESCRIPTIONS     = {
+//            "Current Version Installed", "Delete (no longer needed)", "Update", "Download/Install"
+//                                                     };
 
 }
