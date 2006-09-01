@@ -9,11 +9,13 @@ package com.muddyhorse.cynch;
 // GTCS Imports:
 
 /**
-  *
-  */
-public interface DUProgressListener
+ *
+ */
+public interface ProgressListener
 {
-    public void starting(DUOperation op);
+    public void starting(Operation op);
+
     public void progress(String name, String desc, int amount, int total) throws InterruptedException;
-    public void finished(DUOperation op, boolean success);
+
+    public void finished(Operation op, boolean success);
 }
