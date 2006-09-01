@@ -1,0 +1,24 @@
+CYNCH_00=!,cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511.0,Cynch 1
+CYNCH_01=!,cynch/com/muddyhorse/cynch/DUConstants.class,1.0,1755.0,Cynch 2
+CYNCH_02=!,cynch/com/muddyhorse/cynch/DUOperation.class,1.0,2453.0,Cynch 3
+CYNCH_03=!,cynch/com/muddyhorse/cynch/DUProgressDialog$ProgressBar.class,1.0,1194.0,Cynch 4
+CYNCH_04=!,cynch/com/muddyhorse/cynch/DUProgressDialog.class,1.0,5334.0,Cynch 5
+CYNCH_05=!,cynch/com/muddyhorse/cynch/DUProgressListener.class,1.0,346.0,Cynch 6
+CYNCH_06=!,cynch/com/muddyhorse/cynch/DUSelectedOps$Listener.class,1.0,233.0,Cynch 7
+CYNCH_07=!,cynch/com/muddyhorse/cynch/DUSelectedOps.class,1.0,1544.0,Cynch 8
+CYNCH_08=!,cynch/com/muddyhorse/cynch/Cynch$1.class,1.0,401.0,Cynch 9
+CYNCH_09=!,cynch/com/muddyhorse/cynch/Cynch.class,1.0,5279.0,Cynch 10
+CYNCH_10=!,cynch/com/muddyhorse/cynch/CynchButons.class,1.0,4456.0,Cynch 11
+CYNCH_11=!,cynch/com/muddyhorse/cynch/DynamicUpdatePanel.class,1.0,7141.0,Cynch 12
+CYNCH_12=!,cynch/com/muddyhorse/cynch/DynamicUpdateUtils.class,1.0,11793.0,Cynch 13
+START=!,startApp.bat,1.0,459.0,Application startup 1
+EXAMPLE_EXEC=!,bat/example-startup.bat,1.01,1981.0,Application startup 2
+EXAMPLE_START=!,lib/dstart.jar,1.0,407.0,Application startup 3
+
+COMMON=!,lib/common.zip,1.0,853701.0,Common functions and widgets
+DB_ACCESS=!,lib/db.zip,1.05,25688.0,Database Access files
+DEFAULT_CFG=!,default.cfg,1.04,2208.0,Example default Configuration
+DFT_SYS_PROPS=!,system.properties,1.02,792.0,DB config
+EXAMPLE_CORE=!,lib/dcore.zip,1.05,358886.0,Core Example application
+INI=!,example-cynch.ini,1.0,1816.0,Dynamic Update information
+JDBC_DRIVER=!,lib/jdbc_ora.zip,1.2,1564734.0,Oracle JDBC Support
