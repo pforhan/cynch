@@ -1,13 +1,5 @@
 package com.muddyhorse.cynch;
 
-// java core imports:
-// java swing imports:
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
-
 /**
  *
  */

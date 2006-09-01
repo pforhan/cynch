@@ -1,16 +1,10 @@
 package com.muddyhorse.cynch.gui;
 
-// java core imports:
 import java.awt.Checkbox;
 import java.awt.event.ItemEvent;
 import java.util.Vector;
 
 import com.muddyhorse.cynch.Config;
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
 
 /** hashes from dl-id to DUOperation
  *

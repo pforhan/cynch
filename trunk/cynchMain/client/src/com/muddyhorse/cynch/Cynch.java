@@ -1,25 +1,11 @@
 package com.muddyhorse.cynch;
 
-// java core imports:
-import java.awt.BorderLayout;
-import java.awt.Button;
-import java.awt.Frame;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Label;
-import java.awt.TextField;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowAdapter;
-import java.util.Hashtable;
 
 import com.muddyhorse.cynch.gui.StandardButtonPanel;
 import com.muddyhorse.cynch.gui.UpdateTablePanel;
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
 
 /**
  *
@@ -58,7 +44,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     //
     public static void showFullGUI(Config cfg) {
         Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
-        DynamicUpdateUtils.setMainFrame(f);
+        UpdateUtils.setMainFrame(f);
         // build gui:
         f.addWindowListener(winA);
 
@@ -76,7 +62,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         // build dialog:
         Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
         f.addWindowListener(winA);
-        DynamicUpdateUtils.setMainFrame(f);
+        UpdateUtils.setMainFrame(f);
         f.setResizable(false);
         f.setLayout(new GridBagLayout());
         f.setBackground(java.awt.Color.lightGray);
@@ -112,12 +98,12 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         gbc.fill = GridBagConstraints.NONE;
         f.add(tf, gbc);
 
-        Cynch du = new Cynch(cfg, 10, tf); // this allows listener access...
+        Cynch cy = new Cynch(cfg, 10, tf); // this allows listener access...
 
         // add start upd button:
         Button b = new Button("Select optional updates...");
         b.setActionCommand(CMD_UPDATE);
-        b.addActionListener(du);
+        b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
         gbc.insets.left = 4;
@@ -132,14 +118,14 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         // add exit button:
         b = new Button("Exit");
         b.setActionCommand(CMD_EXIT);
-        b.addActionListener(du);
+        b.addActionListener(cy);
         gbc.gridx = 2;
         f.add(b, gbc);
 
         // add start app button:
         b = new Button("Run " + s);
         b.setActionCommand(CMD_RUN);
-        b.addActionListener(du);
+        b.addActionListener(cy);
         gbc.gridx = 1;
         f.add(b, gbc);
 
@@ -149,7 +135,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         b.requestFocus();
 
         // prepare running thread (to do the countdown):
-        Thread t = new Thread(du);
+        Thread t = new Thread(cy);
         t.setName("Countdown thread");
         t.start();
     }
@@ -158,7 +144,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         // build dialog:
         Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
         f.addWindowListener(winA);
-        DynamicUpdateUtils.setMainFrame(f);
+        UpdateUtils.setMainFrame(f);
         f.setResizable(false);
         f.setLayout(new GridBagLayout());
         f.setBackground(java.awt.Color.lightGray);
@@ -198,13 +184,13 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         gbc.fill = GridBagConstraints.NONE;
         f.add(tf, gbc);
 
-        Cynch du = new Cynch(cfg, 10, tf); // this allows listener access...
+        Cynch cy = new Cynch(cfg, 10, tf); // this allows listener access...
 
         // the next two are intentionally out of order, so that I can do a requestFocus (with the same ref)...
         // add exit button:
         Button b = new Button("Exit");
         b.setActionCommand(CMD_EXIT);
-        b.addActionListener(du);
+        b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
         gbc.insets.left = 4;
@@ -218,7 +204,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         // add start app button:
         b = new Button("Run " + s);
         b.setActionCommand(CMD_RUN);
-        b.addActionListener(du);
+        b.addActionListener(cy);
         gbc.gridx = 1;
         f.add(b, gbc);
 
@@ -228,7 +214,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         b.requestFocus();
 
         // prepare running thread (to do the countdown):
-        Thread t = new Thread(du);
+        Thread t = new Thread(cy);
         t.setName("Countdown thread");
         t.start();
     }
@@ -241,9 +227,9 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     // Utility methods:
     //
     public static void runApplicationAndExit(Config cfg) {
-        DynamicUpdateUtils.startApplication(cfg);
+        UpdateUtils.startApplication(cfg);
 
-        Frame f = DynamicUpdateUtils.getMainFrame();
+        Frame f = UpdateUtils.getMainFrame();
         if (f != null) {
             f.setVisible(false);
             f.dispose();
@@ -260,7 +246,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ex) {
-                //System.out.println("du.r: caught InterruptedException!");
+                //System.out.println("cynch.r: caught InterruptedException!");
             } // endtry
             --countDownValue;
             txf.setText(Integer.toString(countDownValue) + " second(s)");
@@ -282,7 +268,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         } else if (CMD_RUN.equals(ac)) {
             runApplicationAndExit(cfg);
         } else if (CMD_UPDATE.equals(ac)) {
-            DynamicUpdateUtils.getMainFrame().setVisible(false);
+            UpdateUtils.getMainFrame().setVisible(false);
             showFullGUI(cfg);
         } // endif
     }
@@ -297,22 +283,13 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     public static void main(String args[]) {
         try {
             // get args here, eg, name of frame, etc
-            String ini = "du.ini";
+            String ini;
+            if (args.length == 0) {
+                ini = Constants.DEFAULT_INI_NAME;
 
-            // setup settings:
-            Hashtable parms = new Hashtable();
-            for (int i = 0; i < args.length; ++i) {
-                switch (i) {
-                    case 0:
-                        ini = args[0];
-                        parms.put(PARM_INI, args[0]);
-                    break;
-                    // more cases here...
-                    default:
-                } // endswitch
-            } // endfor
-
-            DynamicUpdateUtils.setParameters(parms);
+            } else {
+                ini = args[0];
+            } // endif
 
             Config cfg = new Config(ini);
 
@@ -323,9 +300,9 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
              * no ops avail      -- start application
              */
             // calculate size/availability of types of ops...:
-            int critSize = DynamicUpdateUtils.countDownloadSize(cfg, TYPE_CRITICAL, null);
-            int reqSize = DynamicUpdateUtils.countDownloadSize(cfg, TYPE_CORE, null);
-            int optSize = DynamicUpdateUtils.countDownloadSize(cfg, TYPE_OPTIONAL, null);
+            int critSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
+            int reqSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.core, null);
+            int optSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.optional, null);
             /*
              java.awt.Frame fr = new java.awt.Frame("Quick, Dirty test!");
              java.awt.event.WindowAdapter winA = new java.awt.event.WindowAdapter() { public void windowClosing(java.awt.event.WindowEvent event) { System.exit(0); } };
@@ -340,6 +317,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
                  fr.setVisible(true);
                  //*/
                 showFullGUI(cfg);
+
             } else if (optSize > 0) {
                 // optional ops available; show dialog with timeout...
                 /*
@@ -368,7 +346,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
             } // endif
 
         } catch (Throwable t) {
-            //            System.err.println(t);
+            // System.err.println(t);
             t.printStackTrace();
             //Ensure the application exits with an error condition.
             System.exit(1);

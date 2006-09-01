@@ -1,28 +1,24 @@
 package com.muddyhorse.cynch;
 
-// java core imports:
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Hashtable;
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
  */
-public class Config implements Constants
+public class Config
 {
     //
     // Instance Variables:
     //
     private String    iniName;
-    private Hashtable ini;
-    private Hashtable operations;
-    private Hashtable localFiles;
+    private Map<String, String> ini;
+    private Set<Operation> operations;
+    private Map<String, String> localManifest;
     private boolean   gotRmtCfg;
 
     //
@@ -39,47 +35,47 @@ public class Config implements Constants
     //
 
     public String get(String parm) {
-        return (String) ini.get(parm);
+        return ini.get(parm);
     }
 
     public String getCommand() {
-        return (String) ini.get(INI_MAIN_CLASS);
+        return ini.get(Constants.INI_MAIN_CLASS);
     }
 
     public String getClasspath() {
-        return (String) ini.get(INI_CLASSPATH);
+        return ini.get(Constants.INI_CLASSPATH);
     }
 
     public String getArgs() {
-        return (String) ini.get(INI_ARGS);
+        return ini.get(Constants.INI_ARGS);
     }
 
     public String getUpdateDescription() {
-        return (String) ini.get(INI_UPDATE_DESC);
+        return ini.get(Constants.INI_UPDATE_DESC);
     }
 
     public String getAppDescription() {
-        return (String) ini.get(INI_APP_DESC);
+        return ini.get(Constants.INI_APP_DESC);
     }
 
     public String getAppShortName() {
-        return (String) ini.get(INI_APP_SHORT_NAME);
+        return ini.get(Constants.INI_APP_SHORT_NAME);
     }
 
     public String getRemoteConfigName() {
-        return (String) ini.get(INI_REMOTE_BASE) + (String) ini.get(INI_REMOTE_CORE);
+        return ini.get(Constants.INI_REMOTE_BASE) + ini.get(Constants.INI_REMOTE_CORE);
     }
 
     public String getLocalConfigName() {
-        return (String) ini.get(INI_LOCAL_BASE) + (String) ini.get(INI_LOCAL_CORE);
+        return ini.get(Constants.INI_LOCAL_BASE) + ini.get(Constants.INI_LOCAL_CORE);
     }
 
-    public Hashtable getOperations() {
+    public Set<Operation> getOperations() {
         return operations;
     }
 
-    public Hashtable getLocalFiles() {
-        return localFiles;
+    public Map<String, String> getLocalFiles() {
+        return localManifest;
     }
 
     public boolean gotRemoteConfig() { // used by initial GUI to determine if connection success
@@ -89,26 +85,31 @@ public class Config implements Constants
     //
     // Utility methods:
     //
+    
+    /**
+     * Read in the INI from disk or classpath.  Use that INI to attempt to connect to remote INI.
+     * If remote INI is found, write it to local and use its values.  If not found, use local INI values.
+     */
     public void reloadINI() {
-        String s = DynamicUpdateUtils.getStringFromFile(iniName);
+        String s = UpdateUtils.getStringFromFile(iniName);
         if (s == null || s.equals("")) {
             // try again, from classpath:
-            s = DynamicUpdateUtils.getStringFromClasspath(getClass(), iniName);
+            s = UpdateUtils.getStringFromClasspath(getClass(), iniName);
         } // endif
 
         //        ini = DynamicUpdateUtils.stringToHashtable(s);
-        Hashtable h = DynamicUpdateUtils.stringToHashtable(s);
+        Map<String, String> h = UpdateUtils.stringToHashtable(s);
 
         // extract information to try to find the remote INI:
-        String iname = (String) h.get(Constants.INI_INI_NAME);
-        String rname = (String) h.get(Constants.INI_REMOTE_BASE) + iname;
+        String iname = h.get(Constants.INI_INI_NAME);
+        String rname = h.get(Constants.INI_REMOTE_BASE) + iname;
         // this should be in format remote-root/ini-name
         // note that remote-root should be terminated by a "/"
 
         URL yuri;
         try {
             yuri = new URL(rname);
-            s = DynamicUpdateUtils.getStringFromURL(yuri);
+            s = UpdateUtils.getStringFromURL(yuri);
         } catch (MalformedURLException ex) {
             ex.printStackTrace();
             s = null;
@@ -117,36 +118,36 @@ public class Config implements Constants
 
         if (s != null && !s.equals("")) {
             // if successful d/l, use this data instead:
-            ini = DynamicUpdateUtils.stringToHashtable(s);
+            ini = UpdateUtils.stringToHashtable(s);
             // also, force the ini to be saved:
             // note that I could just use getFileFromURL to do this
             //  work.  That would mean a second download however, so
             //  I'll use the data we have.
-            String lname = (String) h.get(Constants.INI_LOCAL_BASE) + iname;
+            String lname = h.get(Constants.INI_LOCAL_BASE) + iname;
             File f = new File(lname);
-            DynamicUpdateUtils.getFileFromString(s, f);
+            UpdateUtils.writeStringToFile(s, f);
             //            System.out.println("S is:\n"+s);
             //            System.exit(10);
         } else {
-            // d/l not successful, it appears.  Use local data
+            // d/l not successful, it appears.  Use local data:
             ini = h;
         } // endif
     }
 
     public void reloadOperations() {
         try {
-            localFiles = DynamicUpdateUtils.stringToHashtable(DynamicUpdateUtils
+            localManifest = UpdateUtils.stringToHashtable(UpdateUtils
                     .getStringFromFile(getLocalConfigName()));
-            DynamicUpdateUtils.removeNonExistantFiles(localFiles, get(INI_LOCAL_BASE));
+            UpdateUtils.removeNonExistantFiles(localManifest, get(Constants.INI_LOCAL_BASE));
 
-            String s = DynamicUpdateUtils.getStringFromURL(getRemoteConfigName());
+            String s = UpdateUtils.getStringFromURL(getRemoteConfigName());
             //            gotRmtCfg = !("".equals(s)); // if not "", the we got rmt
-            Hashtable remoteFiles = DynamicUpdateUtils.stringToHashtable(s);
+            Hashtable remoteFiles = UpdateUtils.stringToHashtable(s);
             gotRmtCfg = remoteFiles.size() > 0; // if >0 entries, got rmt cfg
             //! process remote files here, for @includes or something!
             //! possibly add another parameter for each line detailing something like download directory (if different from rmt)
-            operations = localFiles == null || remoteFiles == null ? null : DynamicUpdateUtils.compareHashtables(
-                    localFiles, remoteFiles);
+            operations = localManifest == null || remoteFiles == null ? null : UpdateUtils.compareHashtables(
+                    localManifest, remoteFiles);
         } catch (Exception ex) {
             ex.printStackTrace();
         }

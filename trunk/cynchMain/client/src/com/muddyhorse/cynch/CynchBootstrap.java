@@ -1,39 +1,30 @@
 package com.muddyhorse.cynch;
 
-// java core imports:
 import java.awt.BorderLayout;
 import java.awt.Button;
 import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Hashtable;
-
-// Common imports:
-// Localized imports:
-
-// GTCS Imports:
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- *
- */
-
-/* Use the following format for the tag:
- <APPLET code="common.du.DUInstaller"
- codebase="dynupd/"
+ * Use the following format for the tag:
+ <APPLET code="com.muddyhorse.cynch.CynchBootstrap"
+ codebase="cynch/"
  alt="If you enable Java support, this applet will install and run an application"
- name="DUInstaller"
+ name="CynchBootstrap"
  width=400
  height=120
  vspace=5
  hspace=5>
- <PARAM name="ini" value="http://slrh5480/gtcs/dynupd/gtcs.ini">
+ <PARAM name="ini" value="http://example.com/cynch/cynch-example.ini">
  If you view this page with a browser capable of running Java, it would give you the ability to start and run an application.
  </applet>
  */
 //! part of this install process could take down the user ID! (for logging purposes...)
-public class CynchBootstrap extends java.applet.Applet implements java.awt.event.ActionListener,
-        com.muddyhorse.cynch.Constants
+public class CynchBootstrap extends java.applet.Applet implements java.awt.event.ActionListener
 {
     /**
      * 
@@ -49,27 +40,14 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
      };
      //*/
     private static final String[] names            = {
-            "common/du/DUConfig.class",
-            "common/du/DUConstants.class",
-            "common/du/DUOperation.class",
-            "common/du/DUProgressDialog$ProgressBar.class",
-            "common/du/DUProgressDialog.class",
-            "common/du/DUProgressListener.class",
-            "common/du/DUSelectedOps$Listener.class",
-            "common/du/DUSelectedOps.class",
-            "common/du/DynamicUpdate$1.class",
-            "common/du/DynamicUpdate.class",
-            "common/du/DynamicUpdateButons.class",
-            "common/du/DynamicUpdatePanel.class",
-            "common/du/DynamicUpdateUtils.class"
-    };   // note that DUInstaller classes are not included (not needed)...
+    };   // note that Boostrap classes are not included (not needed)...
 
     private static boolean        stopOps;
 
     //
     // Instance variables:
     //
-    private Hashtable             cfg;
+    private Map<String, String>   cfg;
     private TextArea              status;
 
     //
@@ -83,13 +61,13 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     //
     // Utility methods:
     //
-    public static void setStatus(CynchBootstrap dui, String status) {
-        if (dui != null) {
-            dui.setStatus(status);
+    public static void setStatus(CynchBootstrap ui, String status) {
+        if (ui != null) {
+            ui.setStatus(status);
         } // endif
     }
 
-    public static void downloadFiles(CynchBootstrap dui, String base, String duSubDir, boolean createDirsAsNeeded,
+    public static void downloadFiles(CynchBootstrap ui, String base, String duSubDir, boolean createDirsAsNeeded,
             boolean overwriteExisting) throws SecurityException {
         for (String element : names) {
             if (stopOps) {
@@ -100,12 +78,12 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
                 try {
                     if (overwriteExisting || !f.exists()) {
                         // if allowed to overwrite, or the file doesn't exist, do it:
-                        setStatus(dui, "Checking Path...");
-                        DynamicUpdateUtils.insurePathToFileExists(f);
-                        setStatus(dui, "Downloading file " + f.toString());
-                        int size = DynamicUpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + element, f);
+                        setStatus(ui, "Checking Path...");
+                        UpdateUtils.insurePathToFileExists(f);
+                        setStatus(ui, "Downloading file " + f.toString());
+                        int size = UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + element, f);
                         if (size == -1) {
-                            System.out.println("DUI.m: Error downloading from CP! Name: " + element);
+                            System.out.println("ui.m: Error downloading from CP! Name: " + element);
                         } // endif -- download OK
                     } // endif -- file exists
                 } catch (FileNotFoundException ex) {
@@ -115,14 +93,14 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
         } // endfor -- each name in names
     }
 
-    public static void installAndRun(CynchBootstrap dui, Hashtable cfg) throws SecurityException {
-        String base = (String) cfg.get(Constants.INI_LOCAL_BASE);
+    public static void installAndRun(CynchBootstrap ui, Map<String, String> cfg) throws SecurityException {
+        String base = cfg.get(Constants.INI_LOCAL_BASE);
 
-        String dudir = (String) cfg.get(Constants.INI_DU_DIR);
+        String dudir = cfg.get(Constants.INI_DU_DIR);
 
         // only install to app directory (since this could have been run from an applet)
         boolean overwrite = false; //!could get setting this from config file...
-        downloadFiles(dui, base, dudir, true, overwrite);
+        downloadFiles(ui, base, dudir, true, overwrite);
 
         if (stopOps) {
             return;
@@ -133,24 +111,28 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
         //  - these come out of the data file (and can be differently named), not the constant list above...
 
         // save ini file here:
-        String iname = base + (String) cfg.get(Constants.INI_INI_NAME);
+        String iname = base + cfg.get(Constants.INI_INI_NAME);
         File f = new File(iname);
-        setStatus(dui, "Downloading file " + iname);
+        setStatus(ui, "Downloading file " + iname);
         if (!f.exists()) {
-            DynamicUpdateUtils.getFileFromClasspath(CynchBootstrap.class, DynamicUpdateUtils.getParameter(PARM_INI), f);
+            int byteCount = UpdateUtils.getFileFromClasspath(CynchBootstrap.class,cfg.get(Constants.PARM_INI), f);
             // ...if f did not exist before, save it now...
+            if (byteCount == -1) {
+                // error occurred; try default INI name:
+                UpdateUtils.getFileFromClasspath(CynchBootstrap.class,Constants.DEFAULT_INI_NAME, f);
+            } // endif
         }
 
         if (stopOps) {
             return;
         }
         // save the starter file here:
-        String starter = (String) cfg.get(Constants.INI_START_EXEC_DL);
+        String starter = cfg.get(Constants.INI_START_EXEC_DL);
         String sname = base + starter;
         f = new File(sname);
-        setStatus(dui, "Downloading file " + sname);
+        setStatus(ui, "Downloading file " + sname);
         if (!f.exists()) {
-            DynamicUpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + starter, f);
+            UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + starter, f);
             // ...if f did not exist before, save it now...
         }
 
@@ -163,8 +145,8 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
 
         // start the DU proper...
         //        DynamicUpdate.main(new String[] {iname}); // updates (to the DU classes) will not apply...
-        String startExec = (String) cfg.get(INI_START_EXEC);
-        DynamicUpdateUtils.startApplication(startExec + " " + sname, iname, base);
+        String startExec = cfg.get(Constants.INI_START_EXEC);
+        UpdateUtils.startApplication(startExec + " " + sname, iname, base);
 
         /*
          java.awt.Frame fr = new java.awt.Frame("Quick, Dirty test!");
@@ -194,14 +176,13 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     public String[][] getParameterInfo() {
         String[][] s = {
             {
-                    PARM_INI, "URL", "Initialization and settings file"
+                Constants.PARM_INI, "URL", "Initialization and settings file"
             }
         };
         /*
          ,
          {PARM_USER     ,"String","TCS Username
          {PARM_PASSWORD ,"String","
-         {PARM_TAD_ALIAS,"String","
          //*/
         return s;
     }
@@ -209,17 +190,14 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     @Override
     public void init() {
         // obtain parameters here...
-        Hashtable parms = new Hashtable();
+        Map<String, String> parms = new HashMap<String, String>();
         //System.out.println("Getting parameter "+PARM_INI);
-        parms.put(PARM_INI, getParameter(PARM_INI));
+        parms.put(Constants.PARM_INI, getParameter(Constants.PARM_INI));
         //System.out.println("parameter "+PARM_INI+" is "+getParameter(PARM_INI));
-        /*
-         parms.put(PARM_USER,     getParameter(PARM_USER     ));
-         parms.put(PARM_PASSWORD, getParameter(PARM_PASSWORD ));
-         parms.put(PARM_TAD_ALIAS,getParameter(PARM_TAD_ALIAS));
-         //*/
+//         parms.put(PARM_USER,     getParameter(PARM_USER     ));
+//         parms.put(PARM_PASSWORD, getParameter(PARM_PASSWORD ));
         //System.out.println("Setting parameters");
-        DynamicUpdateUtils.setParameters(parms);
+//        UpdateUtils.setParameters(parms);
 
         // GUI Layout:
         //System.out.println("GUI 1");
@@ -232,8 +210,7 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
         //System.out.println("Getting cfg");
         try {
             setStatus("Obtaining configuration...");
-            cfg = DynamicUpdateUtils.stringToHashtable(DynamicUpdateUtils.getStringFromURL(DynamicUpdateUtils
-                    .getParameter(PARM_INI)));
+            cfg = UpdateUtils.stringToHashtable(UpdateUtils.getStringFromURL(parms.get(Constants.PARM_INI)));
             //System.out.println("got cfg success! is "+cfg);
         } catch (Exception ex) {
             setStatus("Error obtaining configuration:\n" + ex.toString());
@@ -244,9 +221,9 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
 
         // GUI Layout, cont'd:
         //System.out.println("GUI 2");
-        Button btn = new Button("Start " + (String) cfg.get(INI_APP_SHORT_NAME));
+        Button btn = new Button("Start " + cfg.get(Constants.INI_APP_SHORT_NAME));
         //        btn.setEnabled(false);
-        btn.setActionCommand(CMD_RUN);
+        btn.setActionCommand(Constants.CMD_RUN);
         btn.addActionListener(this);
         add(btn, BorderLayout.NORTH);
     }
@@ -277,7 +254,7 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     //
     public void actionPerformed(ActionEvent e) {
         String ac = e.getActionCommand();
-        if (CMD_RUN.equals(ac)) {
+        if (Constants.CMD_RUN.equals(ac)) {
             try {
                 stopOps = false;
                 installAndRun(this, cfg);
@@ -293,12 +270,12 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     // Testing/main methods:
     //
     public static void main(String[] args) {
-        String iniName = "/du.ini";
-        Hashtable parms = new Hashtable();
-        parms.put(PARM_INI, iniName);
-        DynamicUpdateUtils.setParameters(parms);
+        String iniName = Constants.DEFAULT_INI_NAME;
+//        Map<String, String> parms = new HashMap<String, String>();
+//        parms.put(PARM_INI, iniName);
+//        UpdateUtils.setParameters(parms);
 
-        Hashtable cfg = DynamicUpdateUtils.stringToHashtable(DynamicUpdateUtils.getStringFromClasspath(
+        Map<String, String> cfg = UpdateUtils.stringToHashtable(UpdateUtils.getStringFromClasspath(
                 CynchBootstrap.class, iniName));
 
         /*
