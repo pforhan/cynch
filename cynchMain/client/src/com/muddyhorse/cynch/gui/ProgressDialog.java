@@ -19,9 +19,9 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     //
     // Instance Variables:
     //
-    private int               rsize;
-    private int               currentOp;
-    private int               totalOps;
+    private long               rsize;
+    private long               currentOp;
+    private long               totalOps;
 
     private boolean           interrupted;          // = false (VM default)
 
@@ -36,7 +36,7 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     //
     // Constructors:
     //
-    public ProgressDialog(Frame parent, int totalOperations) {
+    public ProgressDialog(Frame parent, long totalOperations) {
         super(parent, true);
         totalOps = totalOperations;
         buildGUI();
@@ -124,7 +124,7 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     //
     // Utility methods:
     //
-    private void setProgress(ProgressBar b, TextField t, int current, int total) {
+    private void setProgress(ProgressBar b, TextField t, long current, long total) {
         b.setProgress(current, total);
         t.setText("" + current + " of " + total + " bytes");
     }
@@ -154,52 +154,51 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
 
             setLocation((screenSize.width - paneSize.width) / 2, (screenSize.height - paneSize.height) / 2);
         } else {
-            Dimension invokerSize = c.getSize();
-            Point invokerScreenLocation;
-
-            // If this method is called directly after a call to
-            // setLocation() on the "root", getLocationOnScreen()
-            // may return stale results (Bug#4181562), so we walk
-            // up the tree to calculate the position instead
-            // (unless "root" is an applet, where we cannot walk
-            // all the way up to a toplevel window)
-            //
-            if (root instanceof Applet) {
-                invokerScreenLocation = c.getLocationOnScreen();
-            } else {
-                invokerScreenLocation = new Point(0, 0);
-                Component tc = c;
-                while (tc != null) {
-                    Point tcl = tc.getLocation();
-                    invokerScreenLocation.x += tcl.x;
-                    invokerScreenLocation.y += tcl.y;
-                    if (tc == root) {
-                        break;
+            if (c != null) {
+                Dimension invokerSize = c.getSize();
+                Point invokerScreenLocation;
+                // If this method is called directly after a call to
+                // setLocation() on the "root", getLocationOnScreen()
+                // may return stale results (Bug#4181562), so we walk
+                // up the tree to calculate the position instead
+                // (unless "root" is an applet, where we cannot walk
+                // all the way up to a toplevel window)
+                //
+                if (root instanceof Applet) {
+                    invokerScreenLocation = c.getLocationOnScreen();
+                } else {
+                    invokerScreenLocation = new Point(0, 0);
+                    Component tc = c;
+                    while (tc != null) {
+                        Point tcl = tc.getLocation();
+                        invokerScreenLocation.x += tcl.x;
+                        invokerScreenLocation.y += tcl.y;
+                        if (tc == root) {
+                            break;
+                        }
+                        tc = tc.getParent();
                     }
-                    tc = tc.getParent();
                 }
-            }
-
-            Rectangle dialogBounds = getBounds();
-            int dx = invokerScreenLocation.x + (invokerSize.width - dialogBounds.width >> 1);
-            int dy = invokerScreenLocation.y + (invokerSize.height - dialogBounds.height >> 1);
-            Dimension ss = getToolkit().getScreenSize();
-
-            if (dy + dialogBounds.height > ss.height) {
-                dy = ss.height - dialogBounds.height;
-                dx = invokerScreenLocation.x < ss.width >> 1 ? invokerScreenLocation.x + invokerSize.width
-                        : invokerScreenLocation.x - dialogBounds.width;
-            }
-            if (dx + dialogBounds.width > ss.width) {
-                dx = ss.width - dialogBounds.width;
-            }
-            if (dx < 0) {
-                dx = 0;
-            }
-            if (dy < 0) {
-                dy = 0;
-            }
-            setLocation(dx, dy);
+                Rectangle dialogBounds = getBounds();
+                int dx = invokerScreenLocation.x + (invokerSize.width - dialogBounds.width >> 1);
+                int dy = invokerScreenLocation.y + (invokerSize.height - dialogBounds.height >> 1);
+                Dimension ss = getToolkit().getScreenSize();
+                if (dy + dialogBounds.height > ss.height) {
+                    dy = ss.height - dialogBounds.height;
+                    dx = invokerScreenLocation.x < ss.width >> 1 ? invokerScreenLocation.x + invokerSize.width
+                            : invokerScreenLocation.x - dialogBounds.width;
+                }
+                if (dx + dialogBounds.width > ss.width) {
+                    dx = ss.width - dialogBounds.width;
+                }
+                if (dx < 0) {
+                    dx = 0;
+                }
+                if (dy < 0) {
+                    dy = 0;
+                }
+                setLocation(dx, dy);
+            } // endif            
         }
     }
 
@@ -222,16 +221,16 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     //
     public void starting(Operation op) {
         //System.out.println("pd.s: starting op "+op);
-        String desc = op.remoteDescription == null ? op.localDescription : op.remoteDescription;
-        rsize = op.remoteSize == null ? 0 : op.remoteSize.intValue();
+        String desc = op.getRemoteDescription() == null ? op.getLocalDescription() : op.getRemoteDescription();
+        rsize = op.getRemoteSize();
 
-        opTxt.setText(Constants.OP_DESCRIPTIONS[op.operation]);
-        whatTxt.setText(op.fileID + " -- " + desc);
+        opTxt.setText(op.getOperation().getDescription());
+        whatTxt.setText(op.getFileID() + " -- " + desc);
         setProgress(thisProg, thisProgTxt, 0, rsize);
         setProgress(ttlProg, ttlProgTxt, currentOp, totalOps);
     }
 
-    public void progress(String name, String desc, int amount, int total) throws InterruptedException {
+    public void progress(String name, String desc, long amount, long total) throws InterruptedException {
         if (!interrupted) {
             //System.out.println("pd.p: n:"+name+"; d:"+desc+"; a="+amount+"; t="+total);
             setProgress(thisProg, thisProgTxt, amount, total);
@@ -269,11 +268,11 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
          * 
          */
         private static final long serialVersionUID = 1L;
-        public int                progress;
-        public int                total;
+        public long                progress;
+        public long                total;
 
         // data methods:
-        public void setProgress(int p, int t) {
+        public void setProgress(long p, long t) {
             progress = p;
             total = t;
             repaint();

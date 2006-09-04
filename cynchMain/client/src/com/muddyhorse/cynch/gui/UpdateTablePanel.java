@@ -196,22 +196,22 @@ public class UpdateTablePanel extends java.awt.Panel implements
             String locVer = op.localVersion == null ? "" : vnf.format(op.localVersion);
             String rmtVer = op.remoteVersion == null ? "" : vnf.format(op.remoteVersion);
 
-            switch (op.operation) {
-                case Constants.OP_NOTHING:
-                    if (op.type != TYPE_OPTIONAL) {
+            switch (op.getOperation()) {
+                case nothing:
+                    if (op.getDownloadType() != Constants.DownloadType.optional) {
                         // only display optional nothings
                         continue;
                     } // endif
                     useCheck = false;
                     names[0] = OP_DESCRIPTIONS[op.operation] + " (v" + locVer + ")";
                 break;
-                case Constants.OP_DELETE:
+                case delete:
                     names[0] = OP_DESCRIPTIONS[op.operation] + " v" + locVer;
                 break;
-                case Constants.OP_UPDATE:
+                case update:
                     names[0] = OP_DESCRIPTIONS[op.operation] + " from v" + locVer + " to v" + rmtVer;
                 break;
-                case Constants.OP_DOWNLOAD:
+                case download:
                     names[0] = OP_DESCRIPTIONS[op.operation] + " v" + rmtVer;
                 break;
                 default:

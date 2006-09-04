@@ -6,7 +6,13 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.StringTokenizer;
 import java.util.Map.Entry;
 
 /**
@@ -27,7 +33,7 @@ public class UpdateUtils implements Constants
     //
     // File Retrieval methods:
     //
-    public static String getStringFromClasspath(Class base, String filename) {
+    public static String getStringFromClasspath(Class<?> base, String filename) {
         try {
             InputStream is = base.getResourceAsStream(filename);
             int available = is.available();
@@ -224,8 +230,8 @@ public class UpdateUtils implements Constants
             Set<Entry<String, String>> entries = hash.entrySet();
             for (Entry<String, String> entry : entries) {
                 String key = entry.getKey();
-                String str = key + "=";
-                Object value = entry.getValue();
+                String value = entry.getValue();
+                String str = key + "=" + value;
 
 //                if (value instanceof String) {
 //                    str += (String) value;
@@ -325,44 +331,48 @@ public class UpdateUtils implements Constants
      *   at the offset corresponding to its operation kind.  All of these
      *   vectors are guaranteed to be non-null;
      */
-    public static Vector[] sortOperationsByOp(Hashtable ops, Vector ids) {
-        Vector[] vs = new Vector[4];
+    public static List<List<Operation>> sortOperationsByOp(Map<String, Operation> ops, List<String> ids) {
+        List<List<Operation>> vs = new ArrayList<List<Operation>>();
         for (int i = 0; i < 4; ++i) {
-            vs[i] = new Vector();
+            vs.add(new ArrayList<Operation>());
         } // endfor
 
-        Enumeration enumer = ops.keys();
-        while (enumer.hasMoreElements()) {
-            Object k = enumer.nextElement();
+        Set<Entry<String, Operation>> entries = ops.entrySet();
+        for (Entry<String, Operation> entry : entries) {
+            String k = entry.getKey();
             if (ids == null || ids.contains(k)) {
-                Operation op = (Operation) ops.get(k);
-                vs[op.operation].addElement(op);
+                Operation op = entry.getValue();
+                OperationType olt = op.getOperation();
+                vs.get(olt.ordinal()).add(op);
             } // endif
-        } // endwhile
+        } // endforeach
+
         return vs;
     }
 
     /**
      * @param ids list of IDs to work with.  If null, all IDs will be
      *   accepted.
-     * @return an array of Vectors.  An operation is placed in the vector
+     * @return a list of 3 lists of operations.  An operation is placed in the list
      *   at the offset corresponding to its operation kind.  All of these
-     *   vectors are guaranteed to be non-null;
+     *   lists are guaranteed to be non-null;
      */
-    public static Vector[] sortOperationsByType(Hashtable ops, Vector ids) {
-        Vector[] vs = new Vector[3];
+    public static List<List<Operation>> sortOperationsByType(Map<String, Operation> ops, List<String> ids) {
+        List<List<Operation>> vs = new ArrayList<List<Operation>>();
         for (int i = 0; i < 3; ++i) {
-            vs[i] = new Vector();
+            vs.add(new ArrayList<Operation>());
         } // endfor
 
-        Enumeration enumer = ops.keys();
-        while (enumer.hasMoreElements()) {
-            Object k = enumer.nextElement();
+        Set<Entry<String, Operation>> entries = ops.entrySet();
+        for (Entry<String, Operation> entry : entries) {
+            String k = entry.getKey();
             if (ids == null || ids.contains(k)) {
-                Operation op = (Operation) ops.get(k);
-                vs[op.type].addElement(op);
+                Operation op = entry.getValue();
+                DownloadType dlt = op.getDownloadType();
+                vs.get(dlt.ordinal()).add(op);
             } // endif
-        } // endwhile
+        } // endforeach
+
         return vs;
     }
 
@@ -376,21 +386,22 @@ public class UpdateUtils implements Constants
      * @return the count of errors that occurred in performing the
      *   various operations.
      */
-    public static int performOperations(Config cfg, int type, Vector ops, ProgressListener l)
+    public static int performOperations(Config cfg, DownloadType type, List<Operation> ops, ProgressListener l)
             throws InterruptedException {
         int errorCnt = 0;
-        int size = ops.size();
-        for (int i = 0; i < size; ++i) {
-            Operation op = (Operation) ops.elementAt(i);
-            if (type == TYPE_ALL || type == op.type) {
+        
+        for (Operation op : ops) {
+            if (type == Constants.DownloadType.all || type == op.getDownloadType()) {
                 if (!performOperation(cfg, op, l)) {
                     ++errorCnt;
+
                 } else {
                     // completed successfully, remove from config:
-                    cfg.getOperations().remove(op.fileID);
+                    cfg.getOperations().remove(op.getFileID());
                 } // endif
             } // endif
-        } // endfor
+        } // endforeach
+
         return errorCnt;
     }
 
@@ -404,17 +415,17 @@ public class UpdateUtils implements Constants
             int dlSize = 0;
             File f;
             l.starting(op);
-            String u = cfg.get(INI_REMOTE_BASE) + op.remotePath;
-            String n = cfg.get(INI_LOCAL_BASE) + op.remotePath;
-            switch (op.operation) {
-                case Constants.OP_UPDATE:
+            String u = cfg.get(INI_REMOTE_BASE) + op.getRemotePath();
+            String n = cfg.get(INI_LOCAL_BASE) + op.getRemotePath();
+            switch (op.getOperation()) {
+                case update:
                     // need to:
                     // * download to a temporary location first
                     // * verfiy contents
                     // * delete backup
                     // * rename original to backup
                     // * rename update to original
-                    String temp = new File(n).getParent() + File.separator + cfg.getAppShortName() + op.fileID
+                    String temp = new File(n).getParent() + File.separator + cfg.getAppShortName() + op.getFileID()
                             + "_DynUpd.tmp";
                     // uses current directory (which should exist!)...
                     //                File f = File.createTempFile("GTCS","DynUpd"); // 1.3 specific...
@@ -450,7 +461,7 @@ public class UpdateUtils implements Constants
                         throw new Exception("(Update)File verification problem: " + temp);
                     } // endif
                 break;
-                case Constants.OP_DOWNLOAD:
+                case download:
                     // need to:
                     // * download to real name
                     // * verfiy contents
@@ -462,34 +473,33 @@ public class UpdateUtils implements Constants
                         throw new Exception("(Download)File verification problem: " + n);
                     } // endif
                 break;
-                case Constants.OP_DELETE:
+                case delete:
                     // need to:
                     // * delete original
-                    n = cfg.get(INI_LOCAL_BASE) + op.localPath;
+                    n = cfg.get(INI_LOCAL_BASE) + op.getLocalPath();
                     f = new File(n);
                     if (!f.delete()) {
                         throw new Exception("File deletion problem: " + n);
                     } // endif
-                    if (cfg != null) {
-                        cfg.getLocalFiles().remove(op.fileID);
-                        // save updated config info:
-                        writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
-                    } // endif
+
+                    cfg.getLocalFiles().remove(op.getFileID());
+                    // save updated config info:
+                    writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
+
                     return true;
                     // break;
                 default:
-                    throw new Exception("Unknown operation type: " + op.operation);
+                    throw new Exception("Unknown operation type: " + op.getOperation());
             } // endswitch
 
-            op.remoteSize = new Double(dlSize);
+            op.setRemoteSize(dlSize);
 
-            if (op.operation != Constants.OP_NOTHING // no file chgs on nothings...
-                    && cfg != null) {
+            if (op.getOperation() != Constants.OperationType.nothing) { // no file chgs on nothings...
                 // update config info:
                 // note that, once the download is complete, the remote info
                 //  and the local info should be the same.
                 // thus, use remote info to build vector:
-                cfg.getLocalFiles().put(op.fileID, op.toVector(false));
+                cfg.getLocalFiles().put(op.getFileID(), op.toVector(false));
                 // save updated config info:
                 writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
             } // endif -- not nothing
@@ -540,23 +550,22 @@ public class UpdateUtils implements Constants
      * @return the size of download and update operations, or -1 if
      *   an error occurred.
      */
-    public static int countDownloadSize(Config cfg, Constants.DownloadType type, Vector ids) {
-        int total = 0;
+    public static long countDownloadSize(Config cfg, Constants.DownloadType type, List<String> ids) {
+        long total = 0;
         try {
-            Enumeration enumer = cfg.getOperations().elements();
-            while (enumer.hasMoreElements()) {
-                Operation op = (Operation) enumer.nextElement();
-
-                if (type == TYPE_ALL || type == op.type) {
+            Collection<Operation> ops = cfg.getOperations().values();
+            for (Operation op : ops) {
+                if (type == Constants.DownloadType.all || type == op.getDownloadType()) {
                     // same type
-                    if (ids == null || ids.contains(op.fileID)) {
+                    if (ids == null || ids.contains(op.getFileID())) {
                         // in vector, or vector null
-                        if (op.operation == Constants.OP_UPDATE || op.operation == Constants.OP_DOWNLOAD) {
-                            total += op.remoteSize.intValue();
+                        if (op.getOperation() == Constants.OperationType.update || op.getOperation() == Constants.OperationType.download) {
+                            total += op.getRemoteSize();
                         } // endif
                     } // endif
                 } // endif
-            } // endwhile
+            } // endforeach
+
             return total;
         } catch (NullPointerException ex) {
             return -1;
@@ -576,14 +585,15 @@ public class UpdateUtils implements Constants
      *  operations, or -1 if the operation was interrupted (by, for example,
      *  user intervention).
      */
-    public static int performAllOperations(Config cfg, int type, Vector ids, ProgressListener l)
+    public static int performAllOperations(Config cfg, Constants.DownloadType type, List<String> ids, ProgressListener l)
             throws InterruptedException {
         try {
             int errorCnt;
-            Vector[] opSets = sortOperationsByOp(cfg.getOperations(), ids);
-            errorCnt = performOperations(cfg, type, opSets[Constants.OP_DOWNLOAD], l);
-            errorCnt += performOperations(cfg, type, opSets[Constants.OP_UPDATE], l);
-            errorCnt += performOperations(cfg, type, opSets[Constants.OP_DELETE], l);
+            List<List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
+            errorCnt = performOperations(cfg, type, opSets.get(Constants.OperationType.download.ordinal()), l);
+            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.update.ordinal()), l);
+            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.delete.ordinal()), l);
+
             // of course, skip OP_NOTHING operations...
             return errorCnt;
         } catch (InterruptedException ix) {
@@ -649,26 +659,31 @@ public class UpdateUtils implements Constants
             return -1;
         } finally {
             try {
-                is.close();
-                /*! this causes a slowdown/lockup... see also bug 4211025
-                 related stacktrace:
-                 "Operations thread" prio=7 tid=0x79b8d0 nid=0x157 runnable [0x91af000..0x91afdc8 ]
-                 at java.net.SocketInputStream.socketRead(Native Method)
-                 at java.net.SocketInputStream.read(SocketInputStream.java:86)
-                 at java.net.SocketInputStream.skip(SocketInputStream.java:123)
-                 at java.io.BufferedInputStream.skip(BufferedInputStream.java:308)
-                 at java.io.FilterInputStream.skip(FilterInputStream.java:132)
-                 at java.io.PushbackInputStream.skip(PushbackInputStream.java:279)
-                 at sun.net.www.MeteredStream.skip(MeteredStream.java:80)
-                 at sun.net.www.http.KeepAliveStream.close(KeepAliveStream.java:64)
-                 at common.du.DynamicUpdateUtils.getFileFromURL(DynamicUpdateUtils.java:6 52)
-                 at common.du.DynamicUpdateUtils.performOperation(DynamicUpdateUtils.java :444)
-                 at common.du.DynamicUpdateUtils.performOperations(DynamicUpdateUtils.jav a:372)
-                 at common.du.DynamicUpdateUtils.performAllOperations(DynamicUpdateUtils. java:570)
-                 at common.du.DynamicUpdateButons.run(DynamicUpdateButons.java:116)
-                 at java.lang.Thread.run(Thread.java:484)
-                 */
-                fs.close();
+                if (is != null) {
+                    is.close();
+                } // endif                
+                    /*! this causes a slowdown/lockup... see also bug 4211025
+                     related stacktrace:
+                     "Operations thread" prio=7 tid=0x79b8d0 nid=0x157 runnable [0x91af000..0x91afdc8 ]
+                     at java.net.SocketInputStream.socketRead(Native Method)
+                     at java.net.SocketInputStream.read(SocketInputStream.java:86)
+                     at java.net.SocketInputStream.skip(SocketInputStream.java:123)
+                     at java.io.BufferedInputStream.skip(BufferedInputStream.java:308)
+                     at java.io.FilterInputStream.skip(FilterInputStream.java:132)
+                     at java.io.PushbackInputStream.skip(PushbackInputStream.java:279)
+                     at sun.net.www.MeteredStream.skip(MeteredStream.java:80)
+                     at sun.net.www.http.KeepAliveStream.close(KeepAliveStream.java:64)
+                     at common.du.DynamicUpdateUtils.getFileFromURL(DynamicUpdateUtils.java:6 52)
+                     at common.du.DynamicUpdateUtils.performOperation(DynamicUpdateUtils.java :444)
+                     at common.du.DynamicUpdateUtils.performOperations(DynamicUpdateUtils.jav a:372)
+                     at common.du.DynamicUpdateUtils.performAllOperations(DynamicUpdateUtils. java:570)
+                     at common.du.DynamicUpdateButons.run(DynamicUpdateButons.java:116)
+                     at java.lang.Thread.run(Thread.java:484)
+                     */
+                if (fs != null) {
+                    fs.close();
+                } // endif                
+
             } catch (Exception ex) {
                 ex.printStackTrace();
             } // endtry
@@ -678,7 +693,7 @@ public class UpdateUtils implements Constants
     /**
      * @return the number of bytes downloaded, -1 if error occurred
      */
-    public static int getFileFromClasspath(Class base, String rmt, File local) {
+    public static int getFileFromClasspath(Class<?> base, String rmt, File local) {
         InputStream is = null;
         OutputStream fs = null;
 
@@ -709,14 +724,20 @@ public class UpdateUtils implements Constants
             System.out.println("duu.gFFC: downloaded " + (available - left) + " of " + available);
             System.out.println("duu.gFFC: from " + rmt + " to " + local);
             return available - left;
+
         } catch (Exception ex) {
             //System.out.println(ex);
             ex.printStackTrace();
             return -1;
+
         } finally {
             try {
-                is.close();
-                fs.close();
+                if (is != null) {
+                    is.close();
+                } // endif
+                if (fs != null) {
+                    fs.close();
+                } // endif                
             } catch (Exception ex) {
                 ex.printStackTrace();
             } // endtry
@@ -742,13 +763,17 @@ public class UpdateUtils implements Constants
             //System.out.println("duu.gFFS: saved "+available+" of "+available);
             //System.out.println("duu.gFFS: from string to "+local);
             return data.length();
+
         } catch (Exception ex) {
             //System.out.println(ex);
             ex.printStackTrace();
             return -1;
+
         } finally {
             try {
-                fs.close();
+                if (fs != null) {
+                    fs.close();
+                } // endif                
             } catch (Exception ex) {
                 ex.printStackTrace();
             } // endtry
@@ -767,7 +792,8 @@ public class UpdateUtils implements Constants
 
         try {
             //            Process p = Runtime.getRuntime().exec(appAndArgs, null, new File(startDir));
-            Process p = Runtime.getRuntime().exec(appAndArgs, null);
+//            Process p = 
+            Runtime.getRuntime().exec(appAndArgs, null);
             //            System.out.println("done starting application");
             //            return p.waitFor() == 0;
             return true;
@@ -817,27 +843,28 @@ public class UpdateUtils implements Constants
     }
 
     private static boolean verifyFile(String name) {
+        // TODO implement verifyFile
         return true;
     }
 
-    public static void removeNonExistantFiles(Hashtable filesHash, String base) {
-        Enumeration enumer = filesHash.keys();
-        while (enumer.hasMoreElements()) {
-            Object k = enumer.nextElement();
-            Vector v = (Vector) filesHash.get(k);
-
-            Operation op = new Operation(k.toString());
+    public static void removeNonExistantFiles(Map<String, String> localManifest, String base) {
+        Set<Entry<String, String>> entries = localManifest.entrySet();
+        for (Entry<String, String> entry : entries) {
+            String k = entry.getKey();
+            String v = entry.getValue();
+            
+            Operation op = new Operation(k);
             op.loadVector(v, true); // is local...
-
+            
             // op is prepped:
-            String n = base + op.localPath;
+            String n = base + op.getLocalPath();
             System.out.println("c.d.DUU.rNEF: checking file " + n);
             if (!new File(n).exists()) {
                 // file doesn't exist locally; rmv entry
                 System.out.println("c.d.DUU.rNEF:  removing non-existant file " + n);
-                filesHash.remove(k);
+                localManifest.remove(k);
             } // endif
-        } // endwhile
+        } // endforeach
     }
     /*
      public static String buildClasspath(DUConfig cfg) {

@@ -46,7 +46,7 @@ public interface Constants
 
     // Operation-specific stuff:
     public static enum DownloadType {
-        all, critical, core, optional;
+        critical, core, optional, all;
     }
 //    public static final int      TYPE_ALL            = -1;
 //    public static final int      TYPE_CRITICAL       = 0;
