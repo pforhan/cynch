@@ -49,7 +49,7 @@ public class Operation
                 type = Constants.DownloadType.optional;
             break;
             default: // '.'
-                type = Constants.DownloadType.core;
+                type = Constants.DownloadType.required;
         } // endswitch
     }
 
@@ -188,7 +188,7 @@ public class Operation
         return type;
     }
 
-    public void setType(Constants.DownloadType type) {
+    public void setDownloadType(Constants.DownloadType type) {
         this.type = type;
     }
 

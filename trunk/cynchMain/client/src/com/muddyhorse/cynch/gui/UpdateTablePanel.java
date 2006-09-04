@@ -1,22 +1,11 @@
 package com.muddyhorse.cynch.gui;
 
-import java.awt.Canvas;
-import java.awt.Checkbox;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.Label;
-import java.awt.Panel;
-import java.awt.ScrollPane;
-import java.awt.TextField;
+import java.awt.*;
 import java.awt.event.ItemListener;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.Vector;
+import java.util.List;
+import java.util.Map;
 
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
@@ -48,7 +37,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
     //
     public UpdateTablePanel(Config cfg) {
         config = cfg;
-        selOps = new SelectedOps(cfg);
+        selOps = new SelectedOps();
         selOps.addListener(this);
 
         buildGUI(cfg);
@@ -159,7 +148,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
 
         // place column headers:
         f = new Font("Dialog", Font.BOLD, 11);
-        buildOpsRow(names, f, gbc, pnlGUI, null, TYPE_OPTIONAL);
+        buildOpsRow(names, f, gbc, pnlGUI, null, Constants.DownloadType.optional);
         gbc.gridy++;
 
         // get table(s):
@@ -172,7 +161,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
         return pnlGUI;
     }
 
-    private static void buildOpsTable(Hashtable opsTable, GridBagConstraints gbc, Panel pnl, ItemListener l) {
+    private static void buildOpsTable(Map<String, Operation> opsTable, GridBagConstraints gbc, Panel pnl, ItemListener l) {
         /*
          Vector[] opSets  = DynamicUpdateUtils.sortOperationsByOp(opsTable, null);
          buildOpsTable(opSets[OP_UPDATE  ],gbc,pnl,l);
@@ -180,21 +169,20 @@ public class UpdateTablePanel extends java.awt.Panel implements
          buildOpsTable(opSets[OP_DELETE  ],gbc,pnl,l);
          buildOpsTable(opSets[OP_NOTHING ],gbc,pnl,l);
          //*/
-        Vector[] opSets = UpdateUtils.sortOperationsByType(opsTable, null);
-        buildOpsTable(opSets[TYPE_CRITICAL], gbc, pnl, l);
-        buildOpsTable(opSets[TYPE_CORE], gbc, pnl, l);
-        buildOpsTable(opSets[TYPE_OPTIONAL], gbc, pnl, l);
+        Map<DownloadType, List<Operation>> opSets = UpdateUtils.sortOperationsByType(opsTable, null);
+        buildOpsTable(opSets.get(Constants.DownloadType.critical), gbc, pnl, l);
+        buildOpsTable(opSets.get(Constants.DownloadType.required), gbc, pnl, l);
+        buildOpsTable(opSets.get(Constants.DownloadType.optional), gbc, pnl, l);
     }
 
-    private static void buildOpsTable(Vector ops, GridBagConstraints gbc, Panel pnl, ItemListener l) {
+    private static void buildOpsTable(List<Operation> ops, GridBagConstraints gbc, Panel pnl, ItemListener l) {
         NumberFormat vnf = new DecimalFormat("#0.00");
         String[] names = new String[5];
-        for (Enumeration e = ops.elements(); e.hasMoreElements();) {
-            Operation op = (Operation) e.nextElement();
+        for (Operation op : ops) {
             boolean useCheck = true;
 
-            String locVer = op.localVersion == null ? "" : vnf.format(op.localVersion);
-            String rmtVer = op.remoteVersion == null ? "" : vnf.format(op.remoteVersion);
+            String locVer = vnf.format(op.getLocalVersion());
+            String rmtVer = vnf.format(op.getRemoteVersion());
 
             switch (op.getOperation()) {
                 case nothing:
@@ -203,45 +191,39 @@ public class UpdateTablePanel extends java.awt.Panel implements
                         continue;
                     } // endif
                     useCheck = false;
-                    names[0] = OP_DESCRIPTIONS[op.operation] + " (v" + locVer + ")";
+                    names[0] = op.getOperation().getDescription() + " (v" + locVer + ")";
                 break;
                 case delete:
-                    names[0] = OP_DESCRIPTIONS[op.operation] + " v" + locVer;
+                    names[0] = op.getOperation().getDescription() + " v" + locVer;
                 break;
                 case update:
-                    names[0] = OP_DESCRIPTIONS[op.operation] + " from v" + locVer + " to v" + rmtVer;
+                    names[0] = op.getOperation().getDescription() + " from v" + locVer + " to v" + rmtVer;
                 break;
                 case download:
-                    names[0] = OP_DESCRIPTIONS[op.operation] + " v" + rmtVer;
+                    names[0] = op.getOperation().getDescription() + " v" + rmtVer;
                 break;
                 default:
                     // do what here?
             } // endswitch
 
-            switch (op.type) {
-                case TYPE_CRITICAL:
-                    names[1] = "Critical";
-                break;
-                case TYPE_OPTIONAL:
-                    names[1] = "Optional";
-                break;
-                case TYPE_CORE:
-                    names[1] = "Required";
-                break;
-            } // endswitch
-            names[2] = op.fileID;
-            names[3] = op.remoteDescription == null ? op.localDescription : op.remoteDescription;
-            names[4] = op.remoteSize == null ? snf.format(op.localSize.intValue() / 1024) : snf.format(op.remoteSize
-                    .intValue() / 1024);
+            names[1] = op.getDownloadType().getDescription();
+            names[2] = op.getFileID();
+            names[3] = op.getRemoteDescription() == null ? op.getLocalDescription() : op.getRemoteDescription();
 
-            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, op.type);
+            if (op.getRemoteSize() == 0) { // TODO doublecheck that this change is valid
+                names[4] = snf.format(op.getLocalSize() / 1024);
+            } else {
+                names[4] = snf.format(op.getRemoteSize() / 1024);
+            } // endif
+
+            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, op.getDownloadType());
 
             gbc.gridy++;
-        } // endfor
+        } // endforeach
 
     }
 
-    private static void buildOpsRow(String[] names, Font f, GridBagConstraints gbc, Panel pnl, ItemListener l, int type) {
+    private static void buildOpsRow(String[] names, Font f, GridBagConstraints gbc, Panel pnl, ItemListener l, Constants.DownloadType type) {
         //! eventually: first col, always checkbox
         //  if nothing, skip chk
         //  if modifyable, span = 2 and add text
@@ -253,9 +235,9 @@ public class UpdateTablePanel extends java.awt.Panel implements
         if (l != null) { // indicates whether to use checkbox...
             gbc.gridx = 0;
             check = new Checkbox();
-            check.setState(type != TYPE_OPTIONAL);
+            check.setState(type != Constants.DownloadType.optional);
             check.setFont(f);
-            if (type != TYPE_OPTIONAL) {
+            if (type != Constants.DownloadType.optional) {
                 lblOp = new Label(names[0]);
                 lblOp.setFont(f);
                 check.setEnabled(false);
@@ -286,7 +268,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
         Label lblType = new Label(names[1]);
         lblType.setFont(f);
 
-        if (type != TYPE_OPTIONAL) {
+        if (type != Constants.DownloadType.optional) {
             //            compOp.setBackground(Color.black);
             lblType.setBackground(Color.lightGray);
         } // endif
@@ -329,9 +311,9 @@ public class UpdateTablePanel extends java.awt.Panel implements
     // Utility methods:
     //
     public void refreshTotal() {
-        int ttl = UpdateUtils.countDownloadSize(config, TYPE_CRITICAL, null)
-                + UpdateUtils.countDownloadSize(config, TYPE_CORE, null)
-                + UpdateUtils.countDownloadSize(config, TYPE_ALL, selOps.getSelectedIDs());
+        long ttl = UpdateUtils.countDownloadSize(config, Constants.DownloadType.critical, null)
+                + UpdateUtils.countDownloadSize(config, Constants.DownloadType.required, null)
+                + UpdateUtils.countDownloadSize(config, Constants.DownloadType.all, selOps.getSelectedIDs());
         txtTtl.setText(snf.format(ttl / 1024));
     }
 

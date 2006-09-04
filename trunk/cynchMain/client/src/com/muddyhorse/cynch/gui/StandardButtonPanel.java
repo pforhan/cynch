@@ -88,7 +88,7 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     private boolean getUpdateState(boolean anyOptional) {
         // if there are any downloads available and selected, allow run (with updates)
         long ttl = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null)
-                + UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.core, null)
+                + UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null)
                 + UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.all, selOps.getSelectedIDs());
         return anyOptional || ttl > 0;
     }
@@ -119,7 +119,7 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
             int errTot;
             errTot = UpdateUtils.performAllOperations(cfg, Constants.DownloadType.critical, null, d);
             System.out.println("sbp.r: error total (crit) was: " + errTot);
-            errTot += UpdateUtils.performAllOperations(cfg, Constants.DownloadType.core, null, d);
+            errTot += UpdateUtils.performAllOperations(cfg, Constants.DownloadType.required, null, d);
             System.out.println("sbp.r: error total (+req) was: " + errTot);
             // do optional:
             // do "ALL" types because deletes are always optional.
@@ -160,7 +160,7 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
             Frame f = UpdateUtils.getMainFrame();
 
             long ttlSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
-            ttlSize += UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.core, null);
+            ttlSize += UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null);
             ttlSize += UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.all, selOps.getSelectedIDs());
             d = new ProgressDialog(f, ttlSize);
             d.setLocationRelativeTo(f);
