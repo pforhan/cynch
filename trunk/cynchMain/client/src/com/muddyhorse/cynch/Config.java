@@ -3,9 +3,7 @@ package com.muddyhorse.cynch;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Hashtable;
 import java.util.Map;
-import java.util.Set;
 
 /**
  *
@@ -17,7 +15,7 @@ public class Config
     //
     private String    iniName;
     private Map<String, String> ini;
-    private Set<Operation> operations;
+    private Map<String, Operation> operations;
     private Map<String, String> localManifest;
     private boolean   gotRmtCfg;
 
@@ -70,7 +68,7 @@ public class Config
         return ini.get(Constants.INI_LOCAL_BASE) + ini.get(Constants.INI_LOCAL_CORE);
     }
 
-    public Set<Operation> getOperations() {
+    public Map<String, Operation> getOperations() {
         return operations;
     }
 
@@ -142,12 +140,20 @@ public class Config
 
             String s = UpdateUtils.getStringFromURL(getRemoteConfigName());
             //            gotRmtCfg = !("".equals(s)); // if not "", the we got rmt
-            Hashtable remoteFiles = UpdateUtils.stringToHashtable(s);
-            gotRmtCfg = remoteFiles.size() > 0; // if >0 entries, got rmt cfg
-            //! process remote files here, for @includes or something!
-            //! possibly add another parameter for each line detailing something like download directory (if different from rmt)
-            operations = localManifest == null || remoteFiles == null ? null : UpdateUtils.compareHashtables(
-                    localManifest, remoteFiles);
+            Map<String, String> remoteManifest = UpdateUtils.stringToHashtable(s);
+            
+            if (remoteManifest != null) {
+                gotRmtCfg = remoteManifest.size() > 0; // if >0 entries, got rmt cfg
+            } else {
+                gotRmtCfg = false;
+            } // endif
+
+            if (localManifest == null || remoteManifest == null) {
+                operations = null;
+            } else {
+                operations = UpdateUtils.compareHashtables(localManifest, remoteManifest);
+            } // endif
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }

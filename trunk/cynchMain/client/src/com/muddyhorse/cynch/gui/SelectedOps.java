@@ -2,9 +2,8 @@ package com.muddyhorse.cynch.gui;
 
 import java.awt.Checkbox;
 import java.awt.event.ItemEvent;
-import java.util.Vector;
-
-import com.muddyhorse.cynch.Config;
+import java.util.ArrayList;
+import java.util.List;
 
 /** hashes from dl-id to DUOperation
  *
@@ -14,21 +13,21 @@ public class SelectedOps implements java.awt.event.ItemListener
     //
     // Instance Variables:
     //
-    private Config cfg;
-    private Vector ids = new Vector();
-    private Vector listeners;
+//    private Config cfg;
+    private List<String> ids = new ArrayList<String>();
+    private List<Listener> listeners;
 
     //
     // Constructors:
     //
-    public SelectedOps(Config config) {
-        cfg = config;
+    public SelectedOps() {
+//        cfg = config;
     }
 
     //
     // Data Methods:
     //
-    public Vector getSelectedIDs() {
+    public List<String> getSelectedIDs() {
         return ids;
     }
 
@@ -37,26 +36,27 @@ public class SelectedOps implements java.awt.event.ItemListener
     //
     public void addListener(Listener l) {
         if (listeners == null) {
-            listeners = new Vector();
+            listeners = new ArrayList<Listener>();
         } // endif
-        listeners.addElement(l);
+
+        listeners.add(l);
     }
 
     public void removeListener(Listener l) {
         if (listeners == null) {
-            listeners = new Vector();
+            listeners = new ArrayList<Listener>();
+
+        } else {
+            listeners.remove(l);
         } // endif
-        listeners.removeElement(l);
     }
 
     private void fireEvent(boolean anySel) {
-        if (listeners == null) {
-            listeners = new Vector();
+        if (listeners != null) {
+            for (Listener list : listeners) {
+                list.selectedIDsChanged(anySel);
+            } // endforeach
         } // endif
-        int size = listeners.size();
-        for (int i = 0; i < size; ++i) {
-            ((Listener) listeners.elementAt(i)).selectedIDsChanged(anySel);
-        } // endfor
     }
 
     //
@@ -68,10 +68,10 @@ public class SelectedOps implements java.awt.event.ItemListener
         //System.out.println("item name/id is "+id);
         if (check.getState()) {
             // isSelected:
-            ids.addElement(id);
+            ids.add(id);
         } else {
             // not selected:
-            ids.removeElement(id);
+            ids.remove(id);
         } // endif
         fireEvent(ids.size() != 0);
         //        put(id,(check.getState())?Boolean.TRUE:Boolean.FALSE);
