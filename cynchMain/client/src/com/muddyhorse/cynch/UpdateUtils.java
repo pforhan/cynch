@@ -331,11 +331,11 @@ public class UpdateUtils implements Constants
      *   at the offset corresponding to its operation kind.  All of these
      *   vectors are guaranteed to be non-null;
      */
-    public static List<List<Operation>> sortOperationsByOp(Map<String, Operation> ops, List<String> ids) {
-        List<List<Operation>> vs = new ArrayList<List<Operation>>();
-        for (int i = 0; i < 4; ++i) {
-            vs.add(new ArrayList<Operation>());
-        } // endfor
+    public static Map<Constants.OperationType, List<Operation>> sortOperationsByOp(Map<String, Operation> ops, List<String> ids) {
+        Map<OperationType, List<Operation>> vs = new HashMap<Constants.OperationType, List<Operation>>();
+        for (Constants.OperationType op : Constants.OperationType.values()) {
+            vs.put(op, new ArrayList<Operation>());
+        } // endforeach
 
         Set<Entry<String, Operation>> entries = ops.entrySet();
         for (Entry<String, Operation> entry : entries) {
@@ -343,7 +343,7 @@ public class UpdateUtils implements Constants
             if (ids == null || ids.contains(k)) {
                 Operation op = entry.getValue();
                 OperationType olt = op.getOperation();
-                vs.get(olt.ordinal()).add(op);
+                vs.get(olt).add(op);
             } // endif
         } // endforeach
 
@@ -357,11 +357,11 @@ public class UpdateUtils implements Constants
      *   at the offset corresponding to its operation kind.  All of these
      *   lists are guaranteed to be non-null;
      */
-    public static List<List<Operation>> sortOperationsByType(Map<String, Operation> ops, List<String> ids) {
-        List<List<Operation>> vs = new ArrayList<List<Operation>>();
-        for (int i = 0; i < 3; ++i) {
-            vs.add(new ArrayList<Operation>());
-        } // endfor
+    public static Map<Constants.DownloadType, List<Operation>> sortOperationsByType(Map<String, Operation> ops, List<String> ids) {
+        Map<DownloadType, List<Operation>> vs = new HashMap<Constants.DownloadType, List<Operation>>();
+        vs.put(Constants.DownloadType.required, new ArrayList<Operation>());
+        vs.put(Constants.DownloadType.critical, new ArrayList<Operation>());
+        vs.put(Constants.DownloadType.optional, new ArrayList<Operation>());
 
         Set<Entry<String, Operation>> entries = ops.entrySet();
         for (Entry<String, Operation> entry : entries) {
@@ -369,7 +369,7 @@ public class UpdateUtils implements Constants
             if (ids == null || ids.contains(k)) {
                 Operation op = entry.getValue();
                 DownloadType dlt = op.getDownloadType();
-                vs.get(dlt.ordinal()).add(op);
+                vs.get(dlt).add(op);
             } // endif
         } // endforeach
 
@@ -567,6 +567,7 @@ public class UpdateUtils implements Constants
             } // endforeach
 
             return total;
+
         } catch (NullPointerException ex) {
             return -1;
         } // endtry
@@ -589,10 +590,10 @@ public class UpdateUtils implements Constants
             throws InterruptedException {
         try {
             int errorCnt;
-            List<List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
-            errorCnt = performOperations(cfg, type, opSets.get(Constants.OperationType.download.ordinal()), l);
-            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.update.ordinal()), l);
-            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.delete.ordinal()), l);
+            Map<OperationType, List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
+            errorCnt = performOperations(cfg, type, opSets.get(Constants.OperationType.download), l);
+            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.update), l);
+            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.delete), l);
 
             // of course, skip OP_NOTHING operations...
             return errorCnt;

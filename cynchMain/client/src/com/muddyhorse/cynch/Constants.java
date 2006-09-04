@@ -46,7 +46,14 @@ public interface Constants
 
     // Operation-specific stuff:
     public static enum DownloadType {
-        critical, core, optional, all;
+        critical("Critical"), required("Required"), optional("Optional"), all("All");
+        private final String description;
+        private DownloadType(String description) {
+            this.description = description;
+        }
+        public String getDescription() {
+            return description;
+        }
     }
 //    public static final int      TYPE_ALL            = -1;
 //    public static final int      TYPE_CRITICAL       = 0;

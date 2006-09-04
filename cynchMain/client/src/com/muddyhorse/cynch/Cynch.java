@@ -300,9 +300,9 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
              * no ops avail      -- start application
              */
             // calculate size/availability of types of ops...:
-            int critSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
-            int reqSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.core, null);
-            int optSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.optional, null);
+            long critSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
+            long reqSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null);
+            long optSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.optional, null);
             /*
              java.awt.Frame fr = new java.awt.Frame("Quick, Dirty test!");
              java.awt.event.WindowAdapter winA = new java.awt.event.WindowAdapter() { public void windowClosing(java.awt.event.WindowEvent event) { System.exit(0); } };
