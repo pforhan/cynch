@@ -6,13 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.Map.Entry;
 
 /**
@@ -258,10 +252,10 @@ public class UpdateUtils implements Constants
     }
 
     /** Compare local and remote hashtables and return a hashtable
-     *  of operations to perform.  <STRONG>Note:</STRONG> In the process,
-     *  the original remote hashtable is destroyed.
+     *  of operations to perform.
      */
     public static Map<String, Operation> compareHashtables(Map<String, String> local, Map<String, String>remote) {
+        Map<String, String> remoteCopy = new HashMap<String, String>(remote);
         HashMap<String, Operation> retval = new HashMap<String, Operation>();
 
         // using the keys of the local hashtable, find out what to
@@ -270,12 +264,12 @@ public class UpdateUtils implements Constants
         for (Entry<String, String> localEntry : localEntries) {
             String key = localEntry.getKey();
             String localObj = localEntry.getValue();
-            String remoteObj = remote.get(key);
+            String remoteObj = remoteCopy.get(key);
 
             // if this is an update (ie, present in local and remote)
             //  remove from remote.
             if (remoteObj != null) {
-                remote.remove(key);
+                remoteCopy.remove(key);
             }
 
             String localVector = localObj;
@@ -285,7 +279,7 @@ public class UpdateUtils implements Constants
 
             if (remoteObj == null) {
                 // there is no remote entry; we should delete:
-                op.setOperation(Constants.OperationType.delete);
+                op.setOperation(OperationType.delete);
             } else {
                 // remote entry is present; check to see if we need to update:
                 String remoteVector = remoteObj;
@@ -293,7 +287,7 @@ public class UpdateUtils implements Constants
 
                 // if remote version newer, mark as update
                 if (op.getRemoteVersion() > op.getLocalVersion()) {
-                    op.setOperation(Constants.OperationType.update);
+                    op.setOperation(OperationType.update);
                 } // endif
             } // endif
 
@@ -303,23 +297,26 @@ public class UpdateUtils implements Constants
 
         // Now, the remote hashtable should only contain things that
         // are NOT on the local side - these are the new downloads.
-        Set<Entry<String, String>> remoteEntries = remote.entrySet();
-        for (Entry<String, String> remoteEntry : remoteEntries) {
+//        Set<Entry<String, String>> remoteEntries = remoteCopy.entrySet();
+        Iterator<Entry<String, String>> remoteEntryItor = remoteCopy.entrySet().iterator();
+        while (remoteEntryItor.hasNext()) {
+            Entry<String, String> remoteEntry = remoteEntryItor.next();
+            
             String key = remoteEntry.getKey();
-            String remoteObj = remote.get(key);
-
+            String remoteObj = remoteEntry.getValue();
+            
             if (remoteObj != null) {
-                remote.remove(key); // TODO ? does this work?
+                remoteEntryItor.remove();
             } // endif
-
+            
             String remoteVector = remoteObj;
-
+            
             Operation op = new Operation(key);
             op.loadVector(remoteVector, false);
             op.copyRemoteToLocal();
-            op.setOperation(Constants.OperationType.download);
+            op.setOperation(OperationType.download);
             retval.put(key, op);
-        } // endfor
+        } // endwhile
 
         return retval;
     }
@@ -331,9 +328,9 @@ public class UpdateUtils implements Constants
      *   at the offset corresponding to its operation kind.  All of these
      *   vectors are guaranteed to be non-null;
      */
-    public static Map<Constants.OperationType, List<Operation>> sortOperationsByOp(Map<String, Operation> ops, List<String> ids) {
-        Map<OperationType, List<Operation>> vs = new HashMap<Constants.OperationType, List<Operation>>();
-        for (Constants.OperationType op : Constants.OperationType.values()) {
+    public static Map<OperationType, List<Operation>> sortOperationsByOp(Map<String, Operation> ops, List<String> ids) {
+        Map<OperationType, List<Operation>> vs = new HashMap<OperationType, List<Operation>>();
+        for (OperationType op : OperationType.values()) {
             vs.put(op, new ArrayList<Operation>());
         } // endforeach
 
@@ -357,11 +354,11 @@ public class UpdateUtils implements Constants
      *   at the offset corresponding to its operation kind.  All of these
      *   lists are guaranteed to be non-null;
      */
-    public static Map<Constants.DownloadType, List<Operation>> sortOperationsByType(Map<String, Operation> ops, List<String> ids) {
-        Map<DownloadType, List<Operation>> vs = new HashMap<Constants.DownloadType, List<Operation>>();
-        vs.put(Constants.DownloadType.required, new ArrayList<Operation>());
-        vs.put(Constants.DownloadType.critical, new ArrayList<Operation>());
-        vs.put(Constants.DownloadType.optional, new ArrayList<Operation>());
+    public static Map<DownloadType, List<Operation>> sortOperationsByType(Map<String, Operation> ops, List<String> ids) {
+        Map<DownloadType, List<Operation>> vs = new HashMap<DownloadType, List<Operation>>();
+        vs.put(DownloadType.required, new ArrayList<Operation>());
+        vs.put(DownloadType.critical, new ArrayList<Operation>());
+        vs.put(DownloadType.optional, new ArrayList<Operation>());
 
         Set<Entry<String, Operation>> entries = ops.entrySet();
         for (Entry<String, Operation> entry : entries) {
@@ -391,7 +388,7 @@ public class UpdateUtils implements Constants
         int errorCnt = 0;
         
         for (Operation op : ops) {
-            if (type == Constants.DownloadType.all || type == op.getDownloadType()) {
+            if (type == DownloadType.all || type == op.getDownloadType()) {
                 if (!performOperation(cfg, op, l)) {
                     ++errorCnt;
 
@@ -454,9 +451,10 @@ public class UpdateUtils implements Constants
                         // rename new to original:
                         b = f.renameTo(origf);
                         if (!b) {
-                            // rename1 unsuccessful...
+                            // rename2 unsuccessful...
                             throw new Exception("(Update)File Rename problem: " + f);
                         } // endif
+
                     } else {
                         throw new Exception("(Update)File verification problem: " + temp);
                     } // endif
@@ -494,7 +492,7 @@ public class UpdateUtils implements Constants
 
             op.setRemoteSize(dlSize);
 
-            if (op.getOperation() != Constants.OperationType.nothing) { // no file chgs on nothings...
+            if (op.getOperation() != OperationType.nothing) { // no file chgs on nothings...
                 // update config info:
                 // note that, once the download is complete, the remote info
                 //  and the local info should be the same.
@@ -550,16 +548,16 @@ public class UpdateUtils implements Constants
      * @return the size of download and update operations, or -1 if
      *   an error occurred.
      */
-    public static long countDownloadSize(Config cfg, Constants.DownloadType type, List<String> ids) {
+    public static long countDownloadSize(Config cfg, DownloadType type, List<String> ids) {
         long total = 0;
         try {
             Collection<Operation> ops = cfg.getOperations().values();
             for (Operation op : ops) {
-                if (type == Constants.DownloadType.all || type == op.getDownloadType()) {
+                if (type == DownloadType.all || type == op.getDownloadType()) {
                     // same type
                     if (ids == null || ids.contains(op.getFileID())) {
                         // in vector, or vector null
-                        if (op.getOperation() == Constants.OperationType.update || op.getOperation() == Constants.OperationType.download) {
+                        if (op.getOperation() == OperationType.update || op.getOperation() == OperationType.download) {
                             total += op.getRemoteSize();
                         } // endif
                     } // endif
@@ -586,14 +584,14 @@ public class UpdateUtils implements Constants
      *  operations, or -1 if the operation was interrupted (by, for example,
      *  user intervention).
      */
-    public static int performAllOperations(Config cfg, Constants.DownloadType type, List<String> ids, ProgressListener l)
+    public static int performAllOperations(Config cfg, DownloadType type, List<String> ids, ProgressListener l)
             throws InterruptedException {
         try {
             int errorCnt;
             Map<OperationType, List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
-            errorCnt = performOperations(cfg, type, opSets.get(Constants.OperationType.download), l);
-            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.update), l);
-            errorCnt += performOperations(cfg, type, opSets.get(Constants.OperationType.delete), l);
+            errorCnt = performOperations(cfg, type, opSets.get(OperationType.download), l);
+            errorCnt += performOperations(cfg, type, opSets.get(OperationType.update), l);
+            errorCnt += performOperations(cfg, type, opSets.get(OperationType.delete), l);
 
             // of course, skip OP_NOTHING operations...
             return errorCnt;
@@ -646,7 +644,7 @@ public class UpdateUtils implements Constants
 
                 // commit buffer:
                 fs.write(buffer, 0, amount);
-                Thread.sleep(1000);
+//                Thread.sleep(1000);
             } // endwhile
             System.out.println("duu.gFFURL: downloaded " + (available - left) + " of " + available);
             System.out.println("duu.gFFURL: from " + rmt + " to " + local);
@@ -758,6 +756,7 @@ public class UpdateUtils implements Constants
 
 //            byte[] buffer = data.getBytes();
             //            final int available = buffer.length;
+            insurePathToFileExists(local);
             fs = new PrintWriter(new BufferedOutputStream(new FileOutputStream(local), BUFFER_SIZE));
             fs.print(data);
             fs.flush();

@@ -18,8 +18,8 @@ public class Operation
     private static final char       TYPE_CHAR_OPT  = '?';
 
     private final String            fileID;
-    private Constants.OperationType operation;
-    private Constants.DownloadType  type;
+    private OperationType operation;
+    private DownloadType  type;
     private String                  localDescription;
     private String                  localPath;
     private double                  localVersion;
@@ -32,9 +32,9 @@ public class Operation
     //    private String   redirectPath;
 
     public Operation(String key) {
-        operation = Constants.OperationType.nothing;
+        operation = OperationType.nothing;
         fileID = key;
-        type = Constants.DownloadType.optional;
+        type = DownloadType.optional;
     }
 
     //
@@ -43,13 +43,13 @@ public class Operation
     private void setTypeChar(char t) {
         switch (t) {
             case TYPE_CHAR_CRIT: // '!'
-                type = Constants.DownloadType.critical;
+                type = DownloadType.critical;
             break;
             case TYPE_CHAR_OPT: // '?'
-                type = Constants.DownloadType.optional;
+                type = DownloadType.optional;
             break;
             default: // '.'
-                type = Constants.DownloadType.required;
+                type = DownloadType.required;
         } // endswitch
     }
 
@@ -75,13 +75,13 @@ public class Operation
             // do not read type from local.
             localPath = v[OFS_PATH];
             localVersion = Double.parseDouble(v[OFS_VERSION]);
-            localSize = Long.parseLong(v[OFS_SIZE]);
+            localSize = (long) Double.parseDouble(v[OFS_SIZE]);
             localDescription = v[OFS_DESC];
         } else {
             setTypeChar(v[OFS_TYPE].charAt(0));
             remotePath = v[OFS_PATH];
             remoteVersion = Double.parseDouble(v[OFS_VERSION]);
-            remoteSize = Long.parseLong(v[OFS_SIZE]);
+            remoteSize = (long) Double.parseDouble(v[OFS_SIZE]);
             remoteDescription = v[OFS_DESC];
         } // endif
     }
@@ -144,11 +144,11 @@ public class Operation
         this.localVersion = localVersion;
     }
 
-    public Constants.OperationType getOperation() {
+    public OperationType getOperation() {
         return operation;
     }
 
-    public void setOperation(Constants.OperationType operation) {
+    public void setOperation(OperationType operation) {
         this.operation = operation;
     }
 
@@ -184,11 +184,11 @@ public class Operation
         this.remoteVersion = remoteVersion;
     }
 
-    public Constants.DownloadType getDownloadType() {
+    public DownloadType getDownloadType() {
         return type;
     }
 
-    public void setDownloadType(Constants.DownloadType type) {
+    public void setDownloadType(DownloadType type) {
         this.type = type;
     }
 

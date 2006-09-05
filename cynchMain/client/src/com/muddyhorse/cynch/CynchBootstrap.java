@@ -96,7 +96,7 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     public static void installAndRun(CynchBootstrap ui, Map<String, String> cfg) throws SecurityException {
         String base = cfg.get(Constants.INI_LOCAL_BASE);
 
-        String dudir = cfg.get(Constants.INI_DU_DIR);
+        String dudir = cfg.get(Constants.INI_CYNCH_DIR);
 
         // only install to app directory (since this could have been run from an applet)
         boolean overwrite = false; //!could get setting this from config file...

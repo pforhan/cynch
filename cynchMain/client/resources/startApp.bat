@@ -1,3 +1,4 @@
+pause
 rem @echo off
 
 set JCMD="C:\Program Files\JavaSoft\JRE\1.3\bin\javaw.exe"
