@@ -58,4 +58,8 @@ public interface Constants
                                                                      System.exit(0);
                                                                  }
                                                              };
+    public  static final char       PROPERTY_SEPARATOR_CHAR = ',';
+    public static final char       TYPE_CHAR_CRIT = '!';
+    public static final char       TYPE_CHAR_REQUIRED = '.';
+    public static final char       TYPE_CHAR_OPT  = '?';
 }

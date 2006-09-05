@@ -22,10 +22,10 @@ public class Config
     //
     // Constructors:
     //
-    public Config(String iniName) {
+    public Config(String iniName, boolean loadRemote) {
         this.iniName = iniName;
         reloadINI();
-        reloadOperations();
+        reloadOperations(loadRemote);
     }
 
     //
@@ -141,27 +141,29 @@ public class Config
         } // endif
     }
 
-    public void reloadOperations() {
+    public void reloadOperations(boolean loadRemote) {
         try {
             localManifest = UpdateUtils.stringToHashtable(UpdateUtils
                     .getStringFromFile(getLocalConfigName()));
-            UpdateUtils.removeNonExistantFiles(localManifest, get(Constants.INI_LOCAL_BASE));
 
-            String s = UpdateUtils.getStringFromURL(getRemoteConfigName());
-            //            gotRmtCfg = !("".equals(s)); // if not "", the we got rmt
-            Map<String, String> remoteManifest = UpdateUtils.stringToHashtable(s);
-            
-            if (remoteManifest != null) {
-                gotRmtCfg = remoteManifest.size() > 0; // if >0 entries, got rmt cfg
-            } else {
-                gotRmtCfg = false;
-            } // endif
+            gotRmtCfg = false;
 
-            if (localManifest == null || remoteManifest == null) {
-                operations = null;
-            } else {
-                operations = UpdateUtils.compareHashtables(localManifest, remoteManifest);
-            } // endif
+            if (loadRemote) {
+                UpdateUtils.removeNonExistantFiles(localManifest, get(Constants.INI_LOCAL_BASE));
+
+                String s = UpdateUtils.getStringFromURL(getRemoteConfigName());
+                Map<String, String> remoteManifest = UpdateUtils.stringToHashtable(s);
+
+                if (remoteManifest != null) {
+                    gotRmtCfg = remoteManifest.size() > 0; // if >0 entries, got rmt cfg
+                } // endif
+
+                if (localManifest == null || remoteManifest == null) {
+                    operations = null;
+                } else {
+                    operations = UpdateUtils.compareHashtables(localManifest, remoteManifest);
+                } // endif
+            } // endif            
 
         } catch (Exception ex) {
             ex.printStackTrace();
