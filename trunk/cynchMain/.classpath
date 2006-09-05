@@ -2,6 +2,7 @@
 <classpath>
 	<classpathentry path="client/src" kind="src"/>
 	<classpathentry path="admin/src" kind="src"/>
+	<classpathentry path="client/resources" kind="src"/>
 	<classpathentry path="org.eclipse.jdt.launching.JRE_CONTAINER" kind="con"/>
 	<classpathentry path="bin" kind="output"/>
 </classpath>

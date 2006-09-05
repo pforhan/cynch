@@ -36,6 +36,15 @@ public class Config
         return ini.get(parm);
     }
 
+    public int getActionTimeout() {
+        try {
+            return Integer.parseInt(ini.get(Constants.INI_ACTION_TIMEOUT));
+        } catch (Exception ex) {
+            // ignore exception; use default
+            return Constants.DEFAULT_ACTION_TIMEOUT;
+        }
+    }
+
     public String getCommand() {
         return ini.get(Constants.INI_MAIN_CLASS);
     }

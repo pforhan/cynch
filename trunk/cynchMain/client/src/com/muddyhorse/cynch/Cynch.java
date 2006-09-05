@@ -2,7 +2,8 @@ package com.muddyhorse.cynch;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.WindowAdapter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import com.muddyhorse.cynch.gui.StandardButtonPanel;
 import com.muddyhorse.cynch.gui.UpdateTablePanel;
@@ -10,18 +11,8 @@ import com.muddyhorse.cynch.gui.UpdateTablePanel;
 /**
  *
  */
-public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener, com.muddyhorse.cynch.Constants
+public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
 {
-    //
-    // Class variables:
-    //
-    private static WindowAdapter winA = new WindowAdapter() {
-                                          @Override
-                                          public void windowClosing(java.awt.event.WindowEvent event) {
-                                              System.exit(0);
-                                          }
-                                      };
-
     //
     // Instance Variables:
     //
@@ -29,6 +20,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     private int                  countDownValue;
     private TextField            txf;
     private volatile boolean     stopped;
+    private Thread               myThread;
 
     //
     // Constructors:
@@ -43,14 +35,23 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     // View methods:
     //
     public static void showFullGUI(Config cfg) {
-        Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
+        Frame f = new Frame(cfg.get(Constants.INI_UPD_FRAME_TITLE));
         UpdateUtils.setMainFrame(f);
-        // build gui:
-        f.addWindowListener(winA);
+        f.addWindowListener(Constants.CLOSING_ADAPTER);
 
-        UpdateTablePanel p = new UpdateTablePanel(cfg);
-        f.add(p, BorderLayout.CENTER);
-        f.add(new StandardButtonPanel(cfg, p.getSelectedOperations()), BorderLayout.SOUTH);
+        // build gui:
+        UpdateTablePanel updateTable = new UpdateTablePanel(cfg);
+
+        Panel timeoutPanel = new Panel(new GridBagLayout());
+        timeoutPanel.setBackground(Constants.CYNCH_GRAY);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(0, 0, 0, 0);
+        gbc.fill = GridBagConstraints.BOTH;
+        addTimeoutText(cfg, timeoutPanel, gbc);
+
+        f.add(timeoutPanel, BorderLayout.NORTH);
+        f.add(updateTable, BorderLayout.CENTER);
+        f.add(new StandardButtonPanel(cfg, updateTable.getSelectedOperations()), BorderLayout.SOUTH);
 
         f.setLocation(200, 100);
         f.pack();
@@ -60,19 +61,19 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
 
     public static void showTimeoutDialog(Config cfg) {
         // build dialog:
-        Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
-        f.addWindowListener(winA);
+        Frame f = new Frame(cfg.get(Constants.INI_UPD_FRAME_TITLE));
+        f.addWindowListener(Constants.CLOSING_ADAPTER);
         UpdateUtils.setMainFrame(f);
         f.setResizable(false);
         f.setLayout(new GridBagLayout());
-        f.setBackground(java.awt.Color.lightGray);
+        f.setBackground(Constants.CYNCH_GRAY);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 0);
         gbc.fill = GridBagConstraints.BOTH;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 3;
+        gbc.gridwidth = 4;
 
         // add label:
         String s = cfg.getAppShortName();
@@ -83,26 +84,11 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         gbc.gridy = 5;
         f.add(lbl, gbc);
 
-        // add timeout label:
-        lbl = new Label("The application will be started in");
-        gbc.gridy = 10;
-        gbc.insets.top = 5;
-        gbc.gridwidth = 1;
-        f.add(lbl, gbc);
-
-        // add timeout text:
-        TextField tf = new TextField("10 second(s)");
-        tf.setEditable(false);
-        gbc.gridwidth = 2;
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        f.add(tf, gbc);
-
-        Cynch cy = new Cynch(cfg, 10, tf); // this allows listener access...
+        Cynch cy = addTimeoutText(cfg, f, gbc);
 
         // add start upd button:
         Button b = new Button("Select optional updates...");
-        b.setActionCommand(CMD_UPDATE);
+        b.setActionCommand(Constants.CMD_UPDATE);
         b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
@@ -117,14 +103,14 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         // the next two are intentionally out of order, so that I can do a requestFocus...
         // add exit button:
         b = new Button("Exit");
-        b.setActionCommand(CMD_EXIT);
+        b.setActionCommand(Constants.CMD_EXIT);
         b.addActionListener(cy);
         gbc.gridx = 2;
         f.add(b, gbc);
 
         // add start app button:
         b = new Button("Run " + s);
-        b.setActionCommand(CMD_RUN);
+        b.setActionCommand(Constants.CMD_RUN);
         b.addActionListener(cy);
         gbc.gridx = 1;
         f.add(b, gbc);
@@ -133,28 +119,23 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         f.setLocation(200, 100);
         f.setVisible(true);
         b.requestFocus();
-
-        // prepare running thread (to do the countdown):
-        Thread t = new Thread(cy);
-        t.setName("Countdown thread");
-        t.start();
     }
 
     public static void showConnectErrorDialog(Config cfg) {
         // build dialog:
-        Frame f = new Frame(cfg.get(INI_UPD_FRAME_TITLE));
-        f.addWindowListener(winA);
+        Frame f = new Frame(cfg.get(Constants.INI_UPD_FRAME_TITLE));
+        f.addWindowListener(Constants.CLOSING_ADAPTER);
         UpdateUtils.setMainFrame(f);
         f.setResizable(false);
         f.setLayout(new GridBagLayout());
-        f.setBackground(java.awt.Color.lightGray);
+        f.setBackground(Constants.CYNCH_GRAY);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 0);
         gbc.fill = GridBagConstraints.BOTH;
         gbc.gridx = 0;
         gbc.gridy = 0;
-        gbc.gridwidth = 3;
+        gbc.gridwidth = 4;
 
         // add label:
         String s = cfg.getAppShortName();
@@ -165,37 +146,23 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         gbc.gridy = 5;
         f.add(lbl, gbc);
 
-        lbl = new Label("(Server address: " + cfg.get(INI_REMOTE_BASE) + ")");
+        lbl = new Label("(Server address: " + cfg.get(Constants.INI_REMOTE_BASE) + ")");
         gbc.gridy = 6;
         f.add(lbl, gbc);
 
-        // add timeout label:
-        lbl = new Label("The application will be started in");
-        gbc.gridy = 10;
-        gbc.insets.top = 5;
-        gbc.gridwidth = 1;
-        f.add(lbl, gbc);
-
-        // add timeout text:
-        TextField tf = new TextField("10 second(s)");
-        tf.setEditable(false);
-        gbc.gridwidth = 2;
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        f.add(tf, gbc);
-
-        Cynch cy = new Cynch(cfg, 10, tf); // this allows listener access...
+        Cynch cy = addTimeoutText(cfg, f, gbc);
 
         // the next two are intentionally out of order, so that I can do a requestFocus (with the same ref)...
         // add exit button:
         Button b = new Button("Exit");
-        b.setActionCommand(CMD_EXIT);
+        b.setActionCommand(Constants.CMD_EXIT);
         b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
         gbc.insets.left = 4;
         gbc.insets.right = 4;
-        gbc.fill = GridBagConstraints.BOTH;
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.WEST;
         gbc.gridwidth = 1;
         gbc.gridy = 15;
         gbc.gridx = 2;
@@ -203,20 +170,52 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
 
         // add start app button:
         b = new Button("Run " + s);
-        b.setActionCommand(CMD_RUN);
+        b.setActionCommand(Constants.CMD_RUN);
         b.addActionListener(cy);
-        gbc.gridx = 1;
+        gbc.anchor = GridBagConstraints.EAST;
+        gbc.gridwidth = 2;
+        gbc.gridx = 0;
         f.add(b, gbc);
 
         f.pack();
         f.setLocation(200, 100);
         f.setVisible(true);
         b.requestFocus();
+    }
 
-        // prepare running thread (to do the countdown):
-        Thread t = new Thread(cy);
-        t.setName("Countdown thread");
-        t.start();
+    private static Cynch addTimeoutText(Config cfg, Container parent, GridBagConstraints gbc) {
+        // add timeout label:
+        Label lbl = new Label("The application will be started in");
+        gbc.gridy = 10;
+        gbc.insets.top = 5;
+        gbc.gridwidth = 1;
+        parent.add(lbl, gbc);
+
+        // add timeout text:
+        int actionTimeout = cfg.getActionTimeout();
+        final TextField tf = new TextField(actionTimeout + Constants.SECONDS_SUFFIX);
+        tf.setEditable(false);
+        gbc.gridwidth = 2;
+        gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.NONE;
+        parent.add(tf, gbc);
+        
+//        final Button b = new Button("Stop timer");
+//        gbc.gridx = 3;
+//        gbc.gridwidth = 1;
+//        gbc.insets.left = 3;
+//        parent.add(b, gbc);
+
+        final Cynch cy = new Cynch(cfg, actionTimeout, tf); // this allows listener access...
+        tf.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                cy.stop();
+                tf.setText("(Timer Disabled)");
+            }
+        });
+
+        return cy;
     }
 
     //
@@ -226,6 +225,24 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     //
     // Utility methods:
     //
+    public void stop() {
+        stopped = true;
+        if (myThread != null) {
+            myThread.interrupt();
+        } // endif
+    }
+
+    public Thread start() {
+        stop();
+
+        // prepare running thread (to do the countdown):
+        myThread = new Thread(this);
+        myThread.setName("Countdown thread");
+        myThread.start();
+
+        return myThread;
+    }
+
     public static void runApplicationAndExit(Config cfg) {
         UpdateUtils.startApplication(cfg);
 
@@ -242,19 +259,26 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     // Implementation of the Runnable interface:
     //
     public void run() {
+        // give init an extra bit of time to finish up:
+        try {
+            Thread.sleep(500);
+        } catch (InterruptedException ex) {
+            //System.out.println("cynch.r: caught InterruptedException!");
+        } // endtry
+
         while (!stopped && countDownValue > 0) {
+            txf.setText(Integer.toString(countDownValue) + Constants.SECONDS_SUFFIX);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ex) {
                 //System.out.println("cynch.r: caught InterruptedException!");
             } // endtry
             --countDownValue;
-            txf.setText(Integer.toString(countDownValue) + " second(s)");
         } // endwhile
 
         if (!stopped) {
             runApplicationAndExit(cfg);
-        }
+        } // endif
     }
 
     //
@@ -263,11 +287,11 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     public void actionPerformed(ActionEvent e) {
         stopped = true;
         String ac = e.getActionCommand();
-        if (CMD_EXIT.equals(ac)) {
+        if (Constants.CMD_EXIT.equals(ac)) {
             System.exit(0);
-        } else if (CMD_RUN.equals(ac)) {
+        } else if (Constants.CMD_RUN.equals(ac)) {
             runApplicationAndExit(cfg);
-        } else if (CMD_UPDATE.equals(ac)) {
+        } else if (Constants.CMD_UPDATE.equals(ac)) {
             UpdateUtils.getMainFrame().setVisible(false);
             showFullGUI(cfg);
         } // endif
@@ -300,9 +324,9 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
              * no ops avail      -- start application
              */
             // calculate size/availability of types of ops...:
-            long critSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
-            long reqSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null);
-            long optSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.optional, null);
+            long critSize = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null);
+            long reqSize = UpdateUtils.countDownloadSize(cfg, DownloadType.required, null);
+            long optSize = UpdateUtils.countDownloadSize(cfg, DownloadType.optional, null);
             /*
              java.awt.Frame fr = new java.awt.Frame("Quick, Dirty test!");
              java.awt.event.WindowAdapter winA = new java.awt.event.WindowAdapter() { public void windowClosing(java.awt.event.WindowEvent event) { System.exit(0); } };

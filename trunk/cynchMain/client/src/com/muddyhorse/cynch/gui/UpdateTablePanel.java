@@ -9,6 +9,7 @@ import java.util.Map;
 
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
+import com.muddyhorse.cynch.DownloadType;
 import com.muddyhorse.cynch.Operation;
 import com.muddyhorse.cynch.UpdateUtils;
 
@@ -56,7 +57,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
     //
     private void buildGUI(Config cfg) {
         setLayout(new GridBagLayout());
-        setBackground(java.awt.Color.lightGray);
+        setBackground(Constants.CYNCH_GRAY);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 0);
@@ -148,7 +149,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
 
         // place column headers:
         f = new Font("Dialog", Font.BOLD, 11);
-        buildOpsRow(names, f, gbc, pnlGUI, null, Constants.DownloadType.optional);
+        buildOpsRow(names, f, gbc, pnlGUI, null, DownloadType.optional);
         gbc.gridy++;
 
         // get table(s):
@@ -170,9 +171,9 @@ public class UpdateTablePanel extends java.awt.Panel implements
          buildOpsTable(opSets[OP_NOTHING ],gbc,pnl,l);
          //*/
         Map<DownloadType, List<Operation>> opSets = UpdateUtils.sortOperationsByType(opsTable, null);
-        buildOpsTable(opSets.get(Constants.DownloadType.critical), gbc, pnl, l);
-        buildOpsTable(opSets.get(Constants.DownloadType.required), gbc, pnl, l);
-        buildOpsTable(opSets.get(Constants.DownloadType.optional), gbc, pnl, l);
+        buildOpsTable(opSets.get(DownloadType.critical), gbc, pnl, l);
+        buildOpsTable(opSets.get(DownloadType.required), gbc, pnl, l);
+        buildOpsTable(opSets.get(DownloadType.optional), gbc, pnl, l);
     }
 
     private static void buildOpsTable(List<Operation> ops, GridBagConstraints gbc, Panel pnl, ItemListener l) {
@@ -186,7 +187,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
 
             switch (op.getOperation()) {
                 case nothing:
-                    if (op.getDownloadType() != Constants.DownloadType.optional) {
+                    if (op.getDownloadType() != DownloadType.optional) {
                         // only display optional nothings
                         continue;
                     } // endif
@@ -223,7 +224,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
 
     }
 
-    private static void buildOpsRow(String[] names, Font f, GridBagConstraints gbc, Panel pnl, ItemListener l, Constants.DownloadType type) {
+    private static void buildOpsRow(String[] names, Font f, GridBagConstraints gbc, Panel pnl, ItemListener l, DownloadType type) {
         //! eventually: first col, always checkbox
         //  if nothing, skip chk
         //  if modifyable, span = 2 and add text
@@ -235,9 +236,9 @@ public class UpdateTablePanel extends java.awt.Panel implements
         if (l != null) { // indicates whether to use checkbox...
             gbc.gridx = 0;
             check = new Checkbox();
-            check.setState(type != Constants.DownloadType.optional);
+            check.setState(type != DownloadType.optional);
             check.setFont(f);
-            if (type != Constants.DownloadType.optional) {
+            if (type != DownloadType.optional) {
                 lblOp = new Label(names[0]);
                 lblOp.setFont(f);
                 check.setEnabled(false);
@@ -268,7 +269,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
         Label lblType = new Label(names[1]);
         lblType.setFont(f);
 
-        if (type != Constants.DownloadType.optional) {
+        if (type != DownloadType.optional) {
             //            compOp.setBackground(Color.black);
             lblType.setBackground(Color.lightGray);
         } // endif
@@ -311,9 +312,9 @@ public class UpdateTablePanel extends java.awt.Panel implements
     // Utility methods:
     //
     public void refreshTotal() {
-        long ttl = UpdateUtils.countDownloadSize(config, Constants.DownloadType.critical, null)
-                + UpdateUtils.countDownloadSize(config, Constants.DownloadType.required, null)
-                + UpdateUtils.countDownloadSize(config, Constants.DownloadType.all, selOps.getSelectedIDs());
+        long ttl = UpdateUtils.countDownloadSize(config, DownloadType.critical, null)
+                + UpdateUtils.countDownloadSize(config, DownloadType.required, null)
+                + UpdateUtils.countDownloadSize(config, DownloadType.all, selOps.getSelectedIDs());
         txtTtl.setText(snf.format(ttl / 1024));
     }
 

@@ -1,15 +1,15 @@
 package com.muddyhorse.cynch.gui;
 
 import java.awt.Button;
-import java.awt.Color;
 import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
 
-import com.muddyhorse.cynch.Cynch;
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
+import com.muddyhorse.cynch.Cynch;
+import com.muddyhorse.cynch.DownloadType;
 import com.muddyhorse.cynch.UpdateUtils;
 
 /**
@@ -46,7 +46,6 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     // View methods:
     //
     private void buildGUI() {
-        setBackground(Color.lightGray);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
         gbc.insets.top = 5;
@@ -76,6 +75,8 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
         b.addActionListener(this);
         gbc.gridx = 2;
         add(b, gbc);
+
+        setBackground(Constants.CYNCH_GRAY);
     }
 
     //
@@ -87,15 +88,15 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     //
     private boolean getUpdateState(boolean anyOptional) {
         // if there are any downloads available and selected, allow run (with updates)
-        long ttl = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null)
-                + UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null)
-                + UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.all, selOps.getSelectedIDs());
+        long ttl = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null)
+                + UpdateUtils.countDownloadSize(cfg, DownloadType.required, null)
+                + UpdateUtils.countDownloadSize(cfg, DownloadType.all, selOps.getSelectedIDs());
         return anyOptional || ttl > 0;
     }
 
     private boolean getRunState() {
         // if there are no critical operations, allow run(no updates)
-        return UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null) == 0;
+        return UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null) == 0;
     }
 
     private void runApplication() {
@@ -117,13 +118,13 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
         try {
             Thread.sleep(150);
             int errTot;
-            errTot = UpdateUtils.performAllOperations(cfg, Constants.DownloadType.critical, null, d);
+            errTot = UpdateUtils.performAllOperations(cfg, DownloadType.critical, null, d);
             System.out.println("sbp.r: error total (crit) was: " + errTot);
-            errTot += UpdateUtils.performAllOperations(cfg, Constants.DownloadType.required, null, d);
+            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.required, null, d);
             System.out.println("sbp.r: error total (+req) was: " + errTot);
             // do optional:
             // do "ALL" types because deletes are always optional.
-            errTot += UpdateUtils.performAllOperations(cfg, Constants.DownloadType.all, selOps.getSelectedIDs(), d);
+            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.all, selOps.getSelectedIDs(), d);
             System.out.println("sbp.r: error total (+opt) was: " + errTot);
 
             // need to check errTot here to see if we should proceed...
@@ -159,9 +160,9 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
             // do required/critical:
             Frame f = UpdateUtils.getMainFrame();
 
-            long ttlSize = UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.critical, null);
-            ttlSize += UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.required, null);
-            ttlSize += UpdateUtils.countDownloadSize(cfg, Constants.DownloadType.all, selOps.getSelectedIDs());
+            long ttlSize = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null);
+            ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.required, null);
+            ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.all, selOps.getSelectedIDs());
             d = new ProgressDialog(f, ttlSize);
             d.setLocationRelativeTo(f);
 
