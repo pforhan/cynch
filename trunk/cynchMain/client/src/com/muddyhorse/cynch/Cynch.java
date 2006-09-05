@@ -199,12 +199,6 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.NONE;
         parent.add(tf, gbc);
-        
-//        final Button b = new Button("Stop timer");
-//        gbc.gridx = 3;
-//        gbc.gridwidth = 1;
-//        gbc.insets.left = 3;
-//        parent.add(b, gbc);
 
         final Cynch cy = new Cynch(cfg, actionTimeout, tf); // this allows listener access...
         tf.addMouseListener(new MouseAdapter() {
@@ -214,6 +208,8 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
                 tf.setText("(Timer Disabled)");
             }
         });
+
+        cy.start();
 
         return cy;
     }
