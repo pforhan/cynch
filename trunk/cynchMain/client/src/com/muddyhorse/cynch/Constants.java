@@ -11,7 +11,7 @@ public interface Constants
     //
     // Class variables:
     //
-    public static final Color         CYNCH_GRAY                   = Color.decode("0xD4D0C8"); //lightGray;//.darker();
+    public static final Color         CYNCH_GRAY             = Color.decode("0xD4D0C8"); //lightGray;//.darker();
     // button commands:
     //  used by buttons:
     public static final String        CMD_UPDATE             = "upd";
@@ -58,8 +58,9 @@ public interface Constants
                                                                      System.exit(0);
                                                                  }
                                                              };
-    public  static final char       PROPERTY_SEPARATOR_CHAR = ',';
-    public static final char       TYPE_CHAR_CRIT = '!';
-    public static final char       TYPE_CHAR_REQUIRED = '.';
-    public static final char       TYPE_CHAR_OPT  = '?';
+    public static final String        PROPERTY_SEPARATOR     = ",";
+
+    public static final char          TYPE_CHAR_CRIT         = '!';
+    public static final char          TYPE_CHAR_REQUIRED     = '.';
+    public static final char          TYPE_CHAR_OPT          = '?';
 }

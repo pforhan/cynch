@@ -1,5 +1,7 @@
 package com.muddyhorse.cynch;
 
+import com.muddyhorse.cynch.manifest.Operation;
+
 /**
  *
  */

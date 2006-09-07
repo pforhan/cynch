@@ -5,7 +5,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 
 import com.muddyhorse.cynch.Constants;
-import com.muddyhorse.cynch.Operation;
+import com.muddyhorse.cynch.manifest.Operation;
 
 /**
  *

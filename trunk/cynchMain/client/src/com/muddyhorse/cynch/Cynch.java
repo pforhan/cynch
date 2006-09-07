@@ -7,6 +7,7 @@ import java.awt.event.MouseEvent;
 
 import com.muddyhorse.cynch.gui.StandardButtonPanel;
 import com.muddyhorse.cynch.gui.UpdateTablePanel;
+import com.muddyhorse.cynch.manifest.DownloadType;
 
 /**
  *
@@ -206,6 +207,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
             public void mouseClicked(MouseEvent e) {
                 cy.stop();
                 tf.setText("(Timer Disabled)");
+                tf.removeMouseListener(this);
             }
         });
 
@@ -258,6 +260,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
         // give init an extra bit of time to finish up:
         try {
             Thread.sleep(500);
+            stopped = false;
         } catch (InterruptedException ex) {
             //System.out.println("cynch.r: caught InterruptedException!");
         } // endtry
@@ -311,7 +314,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
                 ini = args[0];
             } // endif
 
-            Config cfg = new Config(ini);
+            Config cfg = new Config(ini, true);
 
             /* investigate here what to display --
              * Critical ops      -- display full DU GUI

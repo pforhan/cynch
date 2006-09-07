@@ -9,8 +9,8 @@ import java.awt.event.ActionEvent;
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
 import com.muddyhorse.cynch.Cynch;
-import com.muddyhorse.cynch.DownloadType;
 import com.muddyhorse.cynch.UpdateUtils;
+import com.muddyhorse.cynch.manifest.DownloadType;
 
 /**
  *
@@ -136,7 +136,7 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
 
             // obtain correct info for next download attempt:
             cfg.reloadINI();
-            cfg.reloadOperations();
+            cfg.reloadOperations(true);
         } // endtry
     }
 
