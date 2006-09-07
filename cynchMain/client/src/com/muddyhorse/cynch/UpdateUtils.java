@@ -9,6 +9,10 @@ import java.net.URLConnection;
 import java.util.*;
 import java.util.Map.Entry;
 
+import com.muddyhorse.cynch.manifest.DownloadType;
+import com.muddyhorse.cynch.manifest.Operation;
+import com.muddyhorse.cynch.manifest.OperationType;
+
 /**
  *
  */
@@ -254,7 +258,7 @@ public class UpdateUtils implements Constants
     /** Compare local and remote hashtables and return a hashtable
      *  of operations to perform.
      */
-    public static Map<String, Operation> compareHashtables(Map<String, String> local, Map<String, String>remote) {
+    public static Map<String, Operation> compareManifests(Map<String, String> local, Map<String, String>remote) {
         Map<String, String> remoteCopy = new HashMap<String, String>(remote);
         HashMap<String, Operation> retval = new HashMap<String, Operation>();
 
@@ -412,8 +416,8 @@ public class UpdateUtils implements Constants
             int dlSize = 0;
             File f;
             l.starting(op);
-            String u = cfg.get(INI_REMOTE_BASE) + op.getRemotePath();
-            String n = cfg.get(INI_LOCAL_BASE) + op.getRemotePath();
+            String u = cfg.get(INI_REMOTE_BASE) + op.getPath();
+            String n = cfg.get(INI_LOCAL_BASE) + op.getPath(); // TODO this needs to use local path...
             switch (op.getOperation()) {
                 case update:
                     // need to:
@@ -847,25 +851,6 @@ public class UpdateUtils implements Constants
         return true;
     }
 
-    public static void removeNonExistantFiles(Map<String, String> localManifest, String base) {
-        Set<Entry<String, String>> entries = localManifest.entrySet();
-        for (Entry<String, String> entry : entries) {
-            String k = entry.getKey();
-            String v = entry.getValue();
-            
-            Operation op = new Operation(k);
-            op.loadVector(v, true); // is local...
-            
-            // op is prepped:
-            String n = base + op.getLocalPath();
-            System.out.println("c.d.DUU.rNEF: checking file " + n);
-            if (!new File(n).exists()) {
-                // file doesn't exist locally; rmv entry
-                System.out.println("c.d.DUU.rNEF:  removing non-existant file " + n);
-                localManifest.remove(k);
-            } // endif
-        } // endforeach
-    }
     /*
      public static String buildClasspath(DUConfig cfg) {
      }

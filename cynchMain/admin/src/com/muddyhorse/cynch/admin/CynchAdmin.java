@@ -18,13 +18,21 @@ import javax.swing.JTable;
  *  - allow version numbers from date/time (perhaps different "versioning" mode).
  *  - export installer jar
  *  - upload managed files to server?
- * @author paf2009
+ *  - ant target or at least command-line version to make changes without gui
  *
+ * Fields present:
+ *  - ini path / prep basedir
+ *  - ini name
+ *  - table of data
+ *    - lists basic info
+ *    - colored by things updated / needing updating
+ *  - save / reload
+ *  - auto-update
+ *
+ * @author paf2009
  */
 public class CynchAdmin
 {
-    
-
     private static AdminTableModel model;
 
     private static JMenuBar getMenuBar() {
@@ -35,11 +43,15 @@ public class CynchAdmin
 
     public static void main(String[] args) {
         JFrame jfr = new JFrame("Cynch admin");
+        jfr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JMenuBar menu = getMenuBar();
         jfr.setJMenuBar(menu);
         
         model = new AdminTableModel();
         jfr.getContentPane().add(new JScrollPane(new JTable(model)), BorderLayout.CENTER);
+
+        jfr.pack();
+        jfr.setVisible(true);
     }
 
 }

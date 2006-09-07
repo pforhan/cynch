@@ -4,6 +4,12 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+
+import com.muddyhorse.cynch.manifest.LocalManifest;
+import com.muddyhorse.cynch.manifest.Operation;
+import com.muddyhorse.cynch.manifest.RemoteManifest;
 
 /**
  *
@@ -15,9 +21,9 @@ public class Config
     //
     private String    iniName;
     private Map<String, String> ini;
-    private Map<String, Operation> operations;
-    private Map<String, String> localManifest;
-    private boolean   gotRmtCfg;
+    private SortedMap<String, Operation> operations = new TreeMap<String, Operation>();
+    private LocalManifest localManifest;
+    private RemoteManifest remoteManifest;
 
     //
     // Constructors:
@@ -69,24 +75,28 @@ public class Config
         return ini.get(Constants.INI_APP_SHORT_NAME);
     }
 
-    public String getRemoteConfigName() {
-        return ini.get(Constants.INI_REMOTE_BASE) + ini.get(Constants.INI_REMOTE_CORE);
+    public String getRemoteConfigName1() {
+        return ini.get(Constants.INI_REMOTE_CORE);
     }
 
-    public String getLocalConfigName() {
-        return ini.get(Constants.INI_LOCAL_BASE) + ini.get(Constants.INI_LOCAL_CORE);
+    public String getLocalConfigName1() {
+        return ini.get(Constants.INI_LOCAL_CORE);
     }
 
-    public Map<String, Operation> getOperations() {
+    public String getRemoteBase() {
+        return ini.get(Constants.INI_REMOTE_BASE);
+    }
+    
+    public String getLocalBase() {
+        return ini.get(Constants.INI_LOCAL_BASE);
+    }
+    
+    public SortedMap<String, Operation> getOperations() {
         return operations;
     }
 
-    public Map<String, String> getLocalFiles() {
+    public LocalManifest getLocalManifest() {
         return localManifest;
-    }
-
-    public boolean gotRemoteConfig() { // used by initial GUI to determine if connection success
-        return gotRmtCfg;
     }
 
     //
@@ -143,27 +153,17 @@ public class Config
 
     public void reloadOperations(boolean loadRemote) {
         try {
-            localManifest = UpdateUtils.stringToHashtable(UpdateUtils
-                    .getStringFromFile(getLocalConfigName()));
+            localManifest = new LocalManifest(new File(getLocalBase()), getLocalConfigName1());
+            localManifest.removeNonExistantFiles();
+            URL rmtBaseURL = new URL(getRemoteBase());
+            remoteManifest = new RemoteManifest(rmtBaseURL, getRemoteConfigName1());
 
-            gotRmtCfg = false;
+            if (!remoteManifest.isLoaded()) {
+                operations.clear();
 
-            if (loadRemote) {
-                UpdateUtils.removeNonExistantFiles(localManifest, get(Constants.INI_LOCAL_BASE));
-
-                String s = UpdateUtils.getStringFromURL(getRemoteConfigName());
-                Map<String, String> remoteManifest = UpdateUtils.stringToHashtable(s);
-
-                if (remoteManifest != null) {
-                    gotRmtCfg = remoteManifest.size() > 0; // if >0 entries, got rmt cfg
-                } // endif
-
-                if (localManifest == null || remoteManifest == null) {
-                    operations = null;
-                } else {
-                    operations = UpdateUtils.compareHashtables(localManifest, remoteManifest);
-                } // endif
-            } // endif            
+            } else {
+                operations.putAll(UpdateUtils.compareManifests(localManifest, remoteManifest));
+            } // endif
 
         } catch (Exception ex) {
             ex.printStackTrace();

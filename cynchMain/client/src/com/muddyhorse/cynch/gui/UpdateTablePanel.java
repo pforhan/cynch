@@ -9,9 +9,9 @@ import java.util.Map;
 
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
-import com.muddyhorse.cynch.DownloadType;
-import com.muddyhorse.cynch.Operation;
 import com.muddyhorse.cynch.UpdateUtils;
+import com.muddyhorse.cynch.manifest.DownloadType;
+import com.muddyhorse.cynch.manifest.Operation;
 
 public class UpdateTablePanel extends java.awt.Panel implements 
         com.muddyhorse.cynch.gui.SelectedOps.Listener, com.muddyhorse.cynch.Constants

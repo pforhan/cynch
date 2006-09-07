@@ -1,10 +1,19 @@
 /**
  * 
  */
-package com.muddyhorse.cynch;
+package com.muddyhorse.cynch.manifest;
+
+import com.muddyhorse.cynch.Constants;
 
 public enum DownloadType {
-    critical("Critical"), required("Required"), optional("Optional"), all("All");
+    critical("Critical", Constants.TYPE_CHAR_CRIT),
+    required("Required", Constants.TYPE_CHAR_REQUIRED),
+    optional("Optional", Constants.TYPE_CHAR_OPT),
+    all("All", (char)-1);
+
+    //
+    // Static Utility methods:
+    //
     public static DownloadType getTypeFromChar(char t) {
         DownloadType type;
 
@@ -22,11 +31,28 @@ public enum DownloadType {
         
         return type;
     }
+
+    //
+    // Instance Variables:
+    //
     private final String description;
-    private DownloadType(String description) {
+    private final char typeChar;
+
+    //
+    // Constructors:
+    //
+    private DownloadType(String description, char typeCode) {
         this.description = description;
+        typeChar = typeCode;
     }
+    
+    //
+    // Data methods:
+    //
     public String getDescription() {
         return description;
+    }
+    public char getTypeAsChar() {
+        return typeChar;
     }
 }
