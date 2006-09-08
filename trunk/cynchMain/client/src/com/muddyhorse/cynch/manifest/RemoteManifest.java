@@ -2,10 +2,10 @@ package com.muddyhorse.cynch.manifest;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.Map.Entry;
 
 import com.muddyhorse.cynch.UpdateUtils;
@@ -15,7 +15,7 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
     //
     // Instance Variables:
     //
-    private List<RemoteFileInfo> remotes = new ArrayList<RemoteFileInfo>();
+    private SortedMap<String, RemoteFileInfo> remotes = new TreeMap<String, RemoteFileInfo>();
     private final String         iniName;
     private final URL            base;
     private boolean              gotRmtManifest;
@@ -44,11 +44,11 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
                 rfi.setDescription("error setting up URL: " + ex.getMessage());
             } // endtry
 
-            remotes.add(rfi);
+            remotes.put(fileID, rfi);
         } // endforeach
     }
 
-    public List<RemoteFileInfo> getAllFileInfo() {
+    public SortedMap<String, RemoteFileInfo> getAllFileInfo() {
         return remotes;
     }
 

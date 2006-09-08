@@ -1,11 +1,10 @@
 package com.muddyhorse.cynch.manifest;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 
@@ -16,7 +15,7 @@ public class LocalManifest implements Manifest<LocalFileInfo>
     //
     // Instance Variables:
     //
-    private List<LocalFileInfo> locals = new ArrayList<LocalFileInfo>();
+    private SortedMap<String, LocalFileInfo> locals = new TreeMap<String, LocalFileInfo>();
     private final String iniName;
     private final File base;
 
@@ -39,23 +38,35 @@ public class LocalManifest implements Manifest<LocalFileInfo>
             String fileID = entry.getKey();
             String csv    = entry.getValue();
             LocalFileInfo lfi = new LocalFileInfo(fileID, csv);
-            locals.add(lfi);
+            locals.put(fileID, lfi);
         } // endforeach
     }
 
     public void removeNonExistantFiles() {
-        Iterator<LocalFileInfo> itor = locals.iterator();
+        Iterator<LocalFileInfo> itor = locals.values().iterator();
         while (itor.hasNext()) {
             LocalFileInfo lfi = itor.next();
             
             if (!lfi.getPath().exists()) {
-                System.out.println("LocalManifest.rNEF:  removing non-existant file " + n);
+                System.out.println("LocalManifest.rNEF:  removing non-existant file from manifest:" + lfi.getPath());
                 itor.remove();
             } // endif
         } // endwhile
     }
 
-    public List<LocalFileInfo> getAllFileInfo() {
+    public void save() {
+        File saveFile = new File(base, iniName);
+        // convert from manifest to string-string map:
+        Map<String, String> output = new TreeMap<String, String>();
+        for (LocalFileInfo lfi : locals.values()) {
+            output.put(lfi.getFileID(), lfi.toString());
+        } // endforeach
+
+        // write to file:
+        UpdateUtils.writeHashtable(saveFile.getPath(),output);
+    }
+
+    public SortedMap<String, LocalFileInfo> getAllFileInfo() {
         return locals;
     }
 
@@ -78,17 +89,4 @@ public class LocalManifest implements Manifest<LocalFileInfo>
             parseManifest(h);
         } // endif        
     }
-
-    public void save() {
-        File saveFile = new File(base, iniName);
-        // convert from manifest to string-string map:
-        Map<String, String> output = new TreeMap<String, String>();
-        for (LocalFileInfo lfi : locals) {
-            output.put(lfi.getFileID(), lfi.toString());
-        } // endforeach
-
-        // write to file:
-        UpdateUtils.writeHashtable(saveFile.getPath(),output);
-    }
-
 }

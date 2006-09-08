@@ -5,7 +5,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 
 import com.muddyhorse.cynch.Constants;
-import com.muddyhorse.cynch.PostDownloadActionType;
 
 public class RemoteFileInfo extends FileInfo
 {
@@ -72,6 +71,9 @@ public class RemoteFileInfo extends FileInfo
         this.downloadType = downloadType;
     }
 
+    /**
+     * Get the full URL to the resource
+     */
     public URL getPath() {
         return path;
     }

@@ -8,10 +8,11 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 
-import com.muddyhorse.cynch.manifest.DownloadType;
-import com.muddyhorse.cynch.manifest.Operation;
-import com.muddyhorse.cynch.manifest.OperationType;
+import com.muddyhorse.cynch.manifest.*;
 
 /**
  *
@@ -24,7 +25,7 @@ public class UpdateUtils implements Constants
     //
     private static final int BUFFER_SIZE = 10000;
 
-//    private static Map<String, String> parms       = new HashMap<String, String>();
+    //    private static Map<String, String> parms       = new HashMap<String, String>();
 
     private static Frame     mainframe;
 
@@ -193,26 +194,26 @@ public class UpdateUtils implements Constants
                 // otherwise break comma separated ones into Vectors.
                 // If they can be, items are inserted as Doubles, failing
                 // that, as Strings.
-//                int comma = value.indexOf(",");
-//                if (comma == -1) {
-//                    try {
-//                        retval.put(key, new Double(value));
-//                    } catch (NumberFormatException nfe) {
-                        retval.put(key, value);
-//                    } // endtry
-//                } else {
-//                    Vector<Comparable> v = new Vector<Comparable>();
-//                    StringTokenizer values = new StringTokenizer(value, ",");
-//                    while (values.hasMoreTokens()) {
-//                        String s = values.nextToken();
-//                        try {
-//                            v.addElement(new Double(s));
-//                        } catch (NumberFormatException nfe) {
-//                            v.addElement(s.trim());
-//                        } // endtry
-//                    } // endwhile
-//                    retval.put(key, v);
-//                } // endif
+                //                int comma = value.indexOf(",");
+                //                if (comma == -1) {
+                //                    try {
+                //                        retval.put(key, new Double(value));
+                //                    } catch (NumberFormatException nfe) {
+                retval.put(key, value);
+                //                    } // endtry
+                //                } else {
+                //                    Vector<Comparable> v = new Vector<Comparable>();
+                //                    StringTokenizer values = new StringTokenizer(value, ",");
+                //                    while (values.hasMoreTokens()) {
+                //                        String s = values.nextToken();
+                //                        try {
+                //                            v.addElement(new Double(s));
+                //                        } catch (NumberFormatException nfe) {
+                //                            v.addElement(s.trim());
+                //                        } // endtry
+                //                    } // endwhile
+                //                    retval.put(key, v);
+                //                } // endif
             } // endif
             pos += next;
         } // endwhile
@@ -224,26 +225,26 @@ public class UpdateUtils implements Constants
     public static void writeHashtable(String filename, Map<String, String> hash) {
         try {
             FileWriter fw = new FileWriter(filename);
-            
+
             Set<Entry<String, String>> entries = hash.entrySet();
             for (Entry<String, String> entry : entries) {
                 String key = entry.getKey();
                 String value = entry.getValue();
                 String str = key + "=" + value;
 
-//                if (value instanceof String) {
-//                    str += (String) value;
-//                } else {
-//                    Vector v = (Vector) value;
-//                    int count = v.size();
-//                    for (int i = 0; i < count; i++) {
-//                        // str += (String)v.elementAt(i);
-//                        str += v.elementAt(i).toString();
-//                        if (i < count - 1) {
-//                            str += ",";
-//                        }
-//                    } // endfor
-//                } // endif
+                //                if (value instanceof String) {
+                //                    str += (String) value;
+                //                } else {
+                //                    Vector v = (Vector) value;
+                //                    int count = v.size();
+                //                    for (int i = 0; i < count; i++) {
+                //                        // str += (String)v.elementAt(i);
+                //                        str += v.elementAt(i).toString();
+                //                        if (i < count - 1) {
+                //                            str += ",";
+                //                        }
+                //                    } // endfor
+                //                } // endif
                 fw.write(str);
                 fw.write("\r\n");
             } // endfor
@@ -252,77 +253,75 @@ public class UpdateUtils implements Constants
             System.out.println(ex);
             //            ex.printStackTrace();
         } // endtry
-        //*/
     }
 
     /** Compare local and remote hashtables and return a hashtable
      *  of operations to perform.
      */
-    public static Map<String, Operation> compareManifests(Map<String, String> local, Map<String, String>remote) {
-        Map<String, String> remoteCopy = new HashMap<String, String>(remote);
-        HashMap<String, Operation> retval = new HashMap<String, Operation>();
+    public static Map<String, Operation> compareManifests(LocalManifest localManifest, RemoteManifest remoteManifest) {
+        SortedMap<String, LocalFileInfo> localFIs = localManifest.getAllFileInfo();
+        TreeMap<String, RemoteFileInfo> remoteFIs = new TreeMap<String, RemoteFileInfo>(remoteManifest.getAllFileInfo());
+
+        Map<String, Operation> rv = new TreeMap<String, Operation>();
 
         // using the keys of the local hashtable, find out what to
         //  ignore (if it is up-to-date already), update or delete:
-        Set<Entry<String, String>> localEntries = local.entrySet();
-        for (Entry<String, String> localEntry : localEntries) {
-            String key = localEntry.getKey();
-            String localObj = localEntry.getValue();
-            String remoteObj = remoteCopy.get(key);
-
+        for (LocalFileInfo lfi : localFIs.values()) {
+            String key = lfi.getFileID();
+            RemoteFileInfo rfi = remoteFIs.get(key);
             // if this is an update (ie, present in local and remote)
-            //  remove from remote.
-            if (remoteObj != null) {
-                remoteCopy.remove(key);
-            }
-
-            String localVector = localObj;
+            //  remove from remote copy.
+            if (rfi != null) {
+                remoteFIs.remove(key);
+            } // endif
 
             Operation op = new Operation(key);
-            op.loadVector(localVector, true);
+            op.setLocal(lfi);
+            op.setRemote(rfi);
 
-            if (remoteObj == null) {
+            if (rfi == null) {
                 // there is no remote entry; we should delete:
                 op.setOperation(OperationType.delete);
+
             } else {
                 // remote entry is present; check to see if we need to update:
-                String remoteVector = remoteObj;
-                op.loadVector(remoteVector, false);
 
                 // if remote version newer, mark as update
-                if (op.getRemoteVersion() > op.getLocalVersion()) {
+                if (rfi.getVersion() > lfi.getVersion()) {
                     op.setOperation(OperationType.update);
+
+                } else {
+                    op.setOperation(OperationType.nothing);
                 } // endif
             } // endif
 
             // put the populated operation into the hashtable:
-            retval.put(key, op);
-        } // endfor
+            rv.put(key, op);
+        } // endforeach
 
-        // Now, the remote hashtable should only contain things that
+        // Now, the remote map should only contain things that
         // are NOT on the local side - these are the new downloads.
-//        Set<Entry<String, String>> remoteEntries = remoteCopy.entrySet();
-        Iterator<Entry<String, String>> remoteEntryItor = remoteCopy.entrySet().iterator();
+        //        Set<Entry<String, String>> remoteEntries = remoteCopy.entrySet();
+        Iterator<Entry<String, RemoteFileInfo>> remoteEntryItor = remoteFIs.entrySet().iterator();
         while (remoteEntryItor.hasNext()) {
-            Entry<String, String> remoteEntry = remoteEntryItor.next();
-            
+            Entry<String, RemoteFileInfo> remoteEntry = remoteEntryItor.next();
+
             String key = remoteEntry.getKey();
-            String remoteObj = remoteEntry.getValue();
-            
-            if (remoteObj != null) {
-                remoteEntryItor.remove();
-            } // endif
-            
-            String remoteVector = remoteObj;
-            
+            RemoteFileInfo rfi = remoteEntry.getValue();
+
+            //            if (rfi != null) {
+            //                remoteEntryItor.remove(); // this is likely gratuitous -- ie, doesn't affect outcome
+            //            } // endif
+
             Operation op = new Operation(key);
-            op.loadVector(remoteVector, false);
-            op.copyRemoteToLocal();
+            op.setRemote(rfi);
+            op.setLocal(null);
             op.setOperation(OperationType.download);
-            retval.put(key, op);
+
+            rv.put(key, op);
         } // endwhile
 
-        return retval;
+        return rv;
     }
 
     /**
@@ -369,7 +368,7 @@ public class UpdateUtils implements Constants
             String k = entry.getKey();
             if (ids == null || ids.contains(k)) {
                 Operation op = entry.getValue();
-                DownloadType dlt = op.getDownloadType();
+                DownloadType dlt = op.getRemote().getDownloadType();
                 vs.get(dlt).add(op);
             } // endif
         } // endforeach
@@ -390,9 +389,9 @@ public class UpdateUtils implements Constants
     public static int performOperations(Config cfg, DownloadType type, List<Operation> ops, ProgressListener l)
             throws InterruptedException {
         int errorCnt = 0;
-        
+
         for (Operation op : ops) {
-            if (type == DownloadType.all || type == op.getDownloadType()) {
+            if (type == DownloadType.all || type == op.getRemote().getDownloadType()) {
                 if (!performOperation(cfg, op, l)) {
                     ++errorCnt;
 
@@ -411,71 +410,69 @@ public class UpdateUtils implements Constants
      * @return true if the operation was successful.
      */
     public static boolean performOperation(Config cfg, Operation op, ProgressListener l) throws InterruptedException {
-        System.out.println("duu.pO: starting...");
+        System.out.println("uu.pO: starting...");
         try {
             int dlSize = 0;
-            File f;
             l.starting(op);
-            String u = cfg.get(INI_REMOTE_BASE) + op.getPath();
-            String n = cfg.get(INI_LOCAL_BASE) + op.getPath(); // TODO this needs to use local path...
+            RemoteFileInfo rfi = op.getRemote();
+            URL u;
+            if (rfi != null) {
+                u = rfi.getPath();
+
+            } else {
+                u = null;
+            } // endif
+
+            LocalFileInfo lfi = op.getLocal();
+            if (lfi == null) {
+                // almost safe to use rfi here... both FIs should not be null at the same time...
+                lfi = rfi.getLocalInfo(new File(cfg.getLocalBase()));
+            } // endif
+
+            final File n = lfi.getPath();
+
+            // do something based on the operatoin
             switch (op.getOperation()) {
-                case update:
+                case update: {
+                    String tempPrefix = cfg.getAppShortName();
+                    String tempSuffix = "_Cynch.tmp";
                     // need to:
                     // * download to a temporary location first
                     // * verfiy contents
                     // * delete backup
                     // * rename original to backup
                     // * rename update to original
-                    String temp = new File(n).getParent() + File.separator + cfg.getAppShortName() + op.getFileID()
-                            + "_DynUpd.tmp";
+                    //                    String temp = n.getParent() + File.separator + tempPrefix + op.getFileID()
+                    //                            + tempSuffix;
                     // uses current directory (which should exist!)...
-                    //                File f = File.createTempFile("GTCS","DynUpd"); // 1.3 specific...
-                    f = new File(temp);
-                    dlSize = getFileFromURL(new URL(u), f, l);
-                    if (dlSize > 0 && verifyFile(temp)) {
-                        insurePathToFileExists(n); // is this needed? should already exist...
-                        File backf = new File(n + ".bak");
-                        // delete old backup file:
-                        boolean b = false;
-                        if (backf.exists()) {
-                            // backup exists, delete it:
-                            b = backf.delete();
-                            if (!b) {
-                                // delete unsuccessful...
-                                throw new Exception("(Update)File delete problem: " + backf);
-                            } // endif
-                        } // endif
-                        // rename original to backup:
-                        File origf = new File(n);
-                        b = origf.renameTo(backf);
-                        if (!b) {
-                            // rename1 unsuccessful...
-                            throw new Exception("(Update)File Rename problem: " + origf);
-                        } // endif
-                        // rename new to original:
-                        b = f.renameTo(origf);
-                        if (!b) {
-                            // rename2 unsuccessful...
-                            throw new Exception("(Update)File Rename problem: " + f);
-                        } // endif
+                    //                    File tempf = new File(temp);
+                    insurePathToFileExists(n); // is this needed? should already exist...
+                    File tempf = File.createTempFile(tempPrefix, tempSuffix, n.getParentFile()); // 1.3 specific...
+                    dlSize = getFileFromURL(u, tempf, l);
+
+                    if (dlSize > 0 && verifyFile(tempf)) {
+                        postProcessDownload(n, tempf, rfi.getAction());
 
                     } else {
-                        throw new Exception("(Update)File verification problem: " + temp);
+                        throw new IllegalStateException("(Update)File verification problem: " + tempf);
                     } // endif
+                }
                 break;
-                case download:
+                case download: {
                     // need to:
                     // * download to real name
                     // * verfiy contents
                     insurePathToFileExists(n);
-                    dlSize = getFileFromURL(new URL(u), new File(n), l);
+                    // TODO set up temporary ops, then call postProc
+                    dlSize = getFileFromURL(u, n, l);
                     if (dlSize > 0 && verifyFile(n)) {
                         // no action necessary here.
                     } else {
                         throw new Exception("(Download)File verification problem: " + n);
                     } // endif
+                }
                 break;
-                case delete:
+                case delete: {
                     // need to:
                     // * delete original
                     n = cfg.get(INI_LOCAL_BASE) + op.getLocalPath();
@@ -488,8 +485,12 @@ public class UpdateUtils implements Constants
                     // save updated config info:
                     writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
 
-                    return true;
-                    // break;
+                }
+                break;
+                case nothing: {
+                    // do nothing here.
+                }
+                break;
                 default:
                     throw new Exception("Unknown operation type: " + op.getOperation());
             } // endswitch
@@ -513,11 +514,63 @@ public class UpdateUtils implements Constants
             throw ix;
 
         } catch (Exception ex) {
-            System.out.println("duu:" + ex);
-            //            ex.printStackTrace();
+            System.out.println("uu:" + ex);
+            ex.printStackTrace();
             l.finished(op, false);
+
             return false;
         } // endtry
+    }
+
+    private static void postProcessDownload(final File targetFile, File tempFile, PostDownloadActionType action) throws ZipException, IOException {
+        File backf = new File(targetFile.getPath() + ".bak");
+        // delete old backup file:
+        boolean b = false;
+        if (backf.exists()) {
+            // backup exists, delete it:
+            b = backf.delete();
+            if (!b) {
+                // delete unsuccessful...
+                throw new IllegalStateException("(Update)File delete problem: " + backf);
+            } // endif
+        } // endif
+        if (targetFile.exists()) {
+            // rename original to backup:
+            b = targetFile.renameTo(backf);
+            if (!b) {
+                // rename1 unsuccessful...
+                throw new IllegalStateException("(Update)File Rename problem: " + targetFile);
+            } // endif
+        } // endif
+
+        // final post-processing:
+        switch (action) {
+            case nothing: {
+                // normal, rename download to original:
+                b = tempFile.renameTo(targetFile);
+                if (!b) {
+                    // rename2 unsuccessful...
+                    throw new IllegalStateException("(Update)File Rename problem: " + tempFile);
+                } // endif
+            } break;
+
+            case unzip: {
+                unzipFileToLocation(tempFile, targetFile);
+            } break;
+
+            default:
+            break;
+        } // endswitch
+    }
+
+    private static void unzipFileToLocation(File tempFile, File targetFile) throws ZipException, IOException {
+        ZipFile zf = new ZipFile(tempFile);
+        Enumeration<? extends ZipEntry> enumer = zf.entries();
+        while (enumer.hasMoreElements()) {
+            ZipEntry ze = enumer.nextElement();
+            ze.getName();
+            // TODO finish unzipping!  Need to run a few tests, too
+        } // endwhile
     }
 
     /*
@@ -648,13 +701,13 @@ public class UpdateUtils implements Constants
 
                 // commit buffer:
                 fs.write(buffer, 0, amount);
-//                Thread.sleep(1000);
+                //                Thread.sleep(1000);
             } // endwhile
-            System.out.println("duu.gFFURL: downloaded " + (available - left) + " of " + available);
-            System.out.println("duu.gFFURL: from " + rmt + " to " + local);
+            System.out.println("uu.gFFURL: downloaded " + (available - left) + " of " + available);
+            System.out.println("uu.gFFURL: from " + rmt + " to " + local);
             return available - left;
         } catch (InterruptedException ix) {
-            //System.out.println("duu.gFFURL: caught ix!! @"+System.currentTimeMillis());
+            //System.out.println("uu.gFFURL: caught ix!! @"+System.currentTimeMillis());
             throw ix;
         } catch (Exception ex) {
             System.out.println(ex);
@@ -665,24 +718,24 @@ public class UpdateUtils implements Constants
                 if (is != null) {
                     is.close();
                 } // endif                
-                    /*! this causes a slowdown/lockup... see also bug 4211025
-                     related stacktrace:
-                     "Operations thread" prio=7 tid=0x79b8d0 nid=0x157 runnable [0x91af000..0x91afdc8 ]
-                     at java.net.SocketInputStream.socketRead(Native Method)
-                     at java.net.SocketInputStream.read(SocketInputStream.java:86)
-                     at java.net.SocketInputStream.skip(SocketInputStream.java:123)
-                     at java.io.BufferedInputStream.skip(BufferedInputStream.java:308)
-                     at java.io.FilterInputStream.skip(FilterInputStream.java:132)
-                     at java.io.PushbackInputStream.skip(PushbackInputStream.java:279)
-                     at sun.net.www.MeteredStream.skip(MeteredStream.java:80)
-                     at sun.net.www.http.KeepAliveStream.close(KeepAliveStream.java:64)
-                     at common.du.DynamicUpdateUtils.getFileFromURL(DynamicUpdateUtils.java:6 52)
-                     at common.du.DynamicUpdateUtils.performOperation(DynamicUpdateUtils.java :444)
-                     at common.du.DynamicUpdateUtils.performOperations(DynamicUpdateUtils.jav a:372)
-                     at common.du.DynamicUpdateUtils.performAllOperations(DynamicUpdateUtils. java:570)
-                     at common.du.DynamicUpdateButons.run(DynamicUpdateButons.java:116)
-                     at java.lang.Thread.run(Thread.java:484)
-                     */
+                /*! this causes a slowdown/lockup... see also bug 4211025
+                 related stacktrace:
+                 "Operations thread" prio=7 tid=0x79b8d0 nid=0x157 runnable [0x91af000..0x91afdc8 ]
+                 at java.net.SocketInputStream.socketRead(Native Method)
+                 at java.net.SocketInputStream.read(SocketInputStream.java:86)
+                 at java.net.SocketInputStream.skip(SocketInputStream.java:123)
+                 at java.io.BufferedInputStream.skip(BufferedInputStream.java:308)
+                 at java.io.FilterInputStream.skip(FilterInputStream.java:132)
+                 at java.io.PushbackInputStream.skip(PushbackInputStream.java:279)
+                 at sun.net.www.MeteredStream.skip(MeteredStream.java:80)
+                 at sun.net.www.http.KeepAliveStream.close(KeepAliveStream.java:64)
+                 at common.du.DynamicUpdateUtils.getFileFromURL(DynamicUpdateUtils.java:6 52)
+                 at common.du.DynamicUpdateUtils.performOperation(DynamicUpdateUtils.java :444)
+                 at common.du.DynamicUpdateUtils.performOperations(DynamicUpdateUtils.jav a:372)
+                 at common.du.DynamicUpdateUtils.performAllOperations(DynamicUpdateUtils. java:570)
+                 at common.du.DynamicUpdateButons.run(DynamicUpdateButons.java:116)
+                 at java.lang.Thread.run(Thread.java:484)
+                 */
                 if (fs != null) {
                     fs.close();
                 } // endif                
@@ -724,8 +777,8 @@ public class UpdateUtils implements Constants
                 // commit buffer:
                 fs.write(buffer, 0, amount);
             } // endwhile
-            System.out.println("duu.gFFC: downloaded " + (available - left) + " of " + available);
-            System.out.println("duu.gFFC: from " + rmt + " to " + local);
+            System.out.println("uu.gFFC: downloaded " + (available - left) + " of " + available);
+            System.out.println("uu.gFFC: from " + rmt + " to " + local);
             return available - left;
 
         } catch (Exception ex) {
@@ -758,14 +811,14 @@ public class UpdateUtils implements Constants
                 return -1;
             }
 
-//            byte[] buffer = data.getBytes();
+            //            byte[] buffer = data.getBytes();
             //            final int available = buffer.length;
             insurePathToFileExists(local);
             fs = new PrintWriter(new BufferedOutputStream(new FileOutputStream(local), BUFFER_SIZE));
             fs.print(data);
             fs.flush();
-            //System.out.println("duu.gFFS: saved "+available+" of "+available);
-            //System.out.println("duu.gFFS: from string to "+local);
+            //System.out.println("uu.gFFS: saved "+available+" of "+available);
+            //System.out.println("uu.gFFS: from string to "+local);
             return data.length();
 
         } catch (Exception ex) {
@@ -792,11 +845,11 @@ public class UpdateUtils implements Constants
         // get arguments:
         //        StringTokenizer izer = new StringTokenizer(cfg.get(INI_EXEC_ARGS),"+");
         String appAndArgs = execName + " " + startDir + " " + args;
-        //System.out.println("duu.sA: running: "+appAndArgs);
+        //System.out.println("uu.sA: running: "+appAndArgs);
 
         try {
             //            Process p = Runtime.getRuntime().exec(appAndArgs, null, new File(startDir));
-//            Process p = 
+            //            Process p = 
             Runtime.getRuntime().exec(appAndArgs, null);
             //            System.out.println("done starting application");
             //            return p.waitFor() == 0;
@@ -826,9 +879,8 @@ public class UpdateUtils implements Constants
      *  of the specified file.
      */
     public static void insurePathToFileExists(File f) throws FileNotFoundException {
-        String parent = f.getParent();
-        File p = new File(parent);
-        //System.out.println("duu.iPE: parent of "+filename+" is "+parent);
+        File p = f.getParentFile();
+        //System.out.println("uu.iPE: parent of "+filename+" is "+parent);
 
         if (!p.exists()) {
             // parent doesn't exist, create it:
@@ -846,7 +898,7 @@ public class UpdateUtils implements Constants
         return mainframe;
     }
 
-    private static boolean verifyFile(String name) {
+    private static boolean verifyFile(File f) {
         // TODO implement verifyFile
         return true;
     }
