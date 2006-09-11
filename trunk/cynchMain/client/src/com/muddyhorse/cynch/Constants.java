@@ -25,9 +25,9 @@ public interface Constants
     public static final String        INI_APP_DESC           = "AppDescription";
     public static final String        INI_APP_SHORT_NAME     = "AppShortName";
     public static final String        INI_LOCAL_BASE         = "LocalBase";
-    public static final String        INI_LOCAL_CORE         = "LocalCoreName";
+    public static final String        INI_LOCAL_MANIFEST     = "LocalManifestName";
     public static final String        INI_REMOTE_BASE        = "RemoteBase";
-    public static final String        INI_REMOTE_CORE        = "RemoteCoreName";
+    public static final String        INI_REMOTE_MANIFEST    = "RemoteManifestName";
     public static final String        INI_CLASSPATH          = "ClassPath";
     public static final String        INI_MAIN_CLASS         = "MainClass";
     public static final String        INI_ARGS               = "Args";
@@ -64,4 +64,5 @@ public interface Constants
     public static final char          TYPE_CHAR_CRIT         = '!';
     public static final char          TYPE_CHAR_REQUIRED     = '.';
     public static final char          TYPE_CHAR_OPT          = '?';
+    public static final char          TYPE_CHAR_DEL          = 'x';
 }

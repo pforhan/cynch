@@ -1,6 +1,7 @@
 package com.muddyhorse.cynch.manifest;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
 
@@ -52,12 +53,12 @@ public class RemoteFileInfo extends FileInfo
             } // endif
         } // endif
 
-        setVersion(Double.parseDouble(v[2]));
+        setVersion(new BigDecimal(v[2]));
         setSize(Long.parseLong(v[3]));
         setDescription(v[4]);
         setAction(PostDownloadActionType.valueOf(v[5]));
 
-        // TODO need some way to say "same as relative path" -- may need extra var
+        // TODO may need some way to say "same as relative path" -- may need special code, like *same, etc
         localFile = new File(v[6]);
 
     }
@@ -138,12 +139,22 @@ public class RemoteFileInfo extends FileInfo
         } // endif
     }
 
+    public boolean isLocalPathRelative() {
+        if (localFile != null) {
+            return !localFile.isAbsolute();
+        } // endif
+
+        // was null, assume intended to be relative
+        return true;
+    }
+
     //
     // Overrides:
     //
     @Override
     public String toString() {
-        return rawURL + Constants.PROPERTY_SEPARATOR 
+        return getDownloadType().getTypeAsChar() + Constants.PROPERTY_SEPARATOR
+        + getRawURL() + Constants.PROPERTY_SEPARATOR 
         + getVersion() + Constants.PROPERTY_SEPARATOR 
         + getSize() + Constants.PROPERTY_SEPARATOR 
         + getDescription() + Constants.PROPERTY_SEPARATOR

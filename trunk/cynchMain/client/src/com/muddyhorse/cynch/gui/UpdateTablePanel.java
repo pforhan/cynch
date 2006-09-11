@@ -12,6 +12,7 @@ import com.muddyhorse.cynch.Constants;
 import com.muddyhorse.cynch.UpdateUtils;
 import com.muddyhorse.cynch.manifest.DownloadType;
 import com.muddyhorse.cynch.manifest.Operation;
+import com.muddyhorse.cynch.manifest.RemoteFileInfo;
 
 public class UpdateTablePanel extends java.awt.Panel implements 
         com.muddyhorse.cynch.gui.SelectedOps.Listener, com.muddyhorse.cynch.Constants
@@ -42,7 +43,6 @@ public class UpdateTablePanel extends java.awt.Panel implements
         selOps.addListener(this);
 
         buildGUI(cfg);
-        // DynamicUpdateUtils.writeHashtable(coreFile, remoteCore);
     }
 
     //
@@ -174,6 +174,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
         buildOpsTable(opSets.get(DownloadType.critical), gbc, pnl, l);
         buildOpsTable(opSets.get(DownloadType.required), gbc, pnl, l);
         buildOpsTable(opSets.get(DownloadType.optional), gbc, pnl, l);
+        buildOpsTable(opSets.get(null), gbc, pnl, l);
     }
 
     private static void buildOpsTable(List<Operation> ops, GridBagConstraints gbc, Panel pnl, ItemListener l) {
@@ -183,11 +184,20 @@ public class UpdateTablePanel extends java.awt.Panel implements
             boolean useCheck = true;
 
             String locVer = vnf.format(op.getLocal().getVersion());
-            String rmtVer = vnf.format(op.getRemote().getVersion());
+            RemoteFileInfo remote = op.getRemote();
+            String rmtVer;
+            if (remote != null) {
+                rmtVer = vnf.format(remote.getVersion());
+
+            } else {
+                // no remote available, should be delete;
+                rmtVer = "";
+                remote = UpdateUtils.DUMMY_REMOTE_INFO;
+            } // endif
 
             switch (op.getOperation()) {
                 case nothing:
-                    if (op.getRemote().getDownloadType() != DownloadType.optional) {
+                    if (remote.getDownloadType() != DownloadType.optional) {
                         // only display optional nothings
                         continue;
                     } // endif
@@ -207,17 +217,17 @@ public class UpdateTablePanel extends java.awt.Panel implements
                     // do what here?
             } // endswitch
 
-            names[1] = op.getRemote().getDownloadType().getDescription();
+            names[1] = remote.getDownloadType().getDescription();
             names[2] = op.getFileID();
-            names[3] = op.getRemote().getDescription() == null ? op.getLocal().getDescription() : op.getRemote().getDescription();
+            names[3] = remote.getDescription() == null ? op.getLocal().getDescription() : remote.getDescription();
 
-            if (op.getRemote().getSize() == 0) { // TODO doublecheck that this change is valid
+            if (remote.getSize() == 0) { // TODO doublecheck that this change is valid
                 names[4] = snf.format(op.getLocal().getSize() / 1024);
             } else {
-                names[4] = snf.format(op.getRemote().getSize() / 1024);
+                names[4] = snf.format(remote.getSize() / 1024);
             } // endif
 
-            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, op.getRemote().getDownloadType());
+            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, remote.getDownloadType());
 
             gbc.gridy++;
         } // endforeach

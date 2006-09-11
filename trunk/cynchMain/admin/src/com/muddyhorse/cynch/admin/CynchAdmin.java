@@ -3,8 +3,10 @@ package com.muddyhorse.cynch.admin;
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.io.File;
+import java.io.IOException;
 
 import javax.swing.*;
+
 
 /**
  * Admin for cynch manifest file.
@@ -67,16 +69,29 @@ public class CynchAdmin
     }
 
     public static void main(String[] args) {
-        JFrame jfr = new JFrame("Cynch admin");
-        jfr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JMenuBar menu = getMenuBar();
-        jfr.setJMenuBar(menu);
-        
-        model = new AdminTableModel();
-        jfr.getContentPane().add(new JScrollPane(new JTable(model)), BorderLayout.CENTER);
+        if (args.length == 0) {
+            JFrame jfr = new JFrame("Cynch admin");
+            jfr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            JMenuBar menu = getMenuBar();
+            jfr.setJMenuBar(menu);
+            model = new AdminTableModel();
+            jfr.getContentPane().add(new JScrollPane(new JTable(model)), BorderLayout.CENTER);
+            jfr.pack();
+            jfr.setVisible(true);
 
-        jfr.pack();
-        jfr.setVisible(true);
+        } else if (args.length == 2) {
+            try {
+                if ("create".equals(args[0])) {
+                    AdminUtils.createManifest(args[1]);
+
+                } else if ("update".equals(args[0])) {
+                    AdminUtils.updateManifest(args[1]);
+                } // endif
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            } // endtry
+        } // endif
     }
-
+    
 }
