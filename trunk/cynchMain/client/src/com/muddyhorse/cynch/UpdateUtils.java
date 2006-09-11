@@ -1,6 +1,5 @@
 package com.muddyhorse.cynch;
 
-import java.awt.Component;
 import java.awt.Frame;
 import java.io.*;
 import java.math.BigDecimal;
@@ -25,13 +24,14 @@ public class UpdateUtils implements Constants
     //
     // Class variables:
     //
-    private static final int            BUFFER_SIZE       = 10000;
+    private static final int           BUFFER_SIZE       = 10000;
 
     public static final RemoteFileInfo DUMMY_REMOTE_INFO = new RemoteFileInfo("");
 
     //    private static Map<String, String> parms       = new HashMap<String, String>();
 
-    private static Frame                mainframe;
+    private static Frame               mainframe;
+    private static Config              mainConfig;
 
     //
     // File Retrieval methods:
@@ -958,15 +958,23 @@ public class UpdateUtils implements Constants
         return true;
     }
 
-    public static Component getRootContainer(Component c) {
-        Component parent = c.getParent();
-        Component current = c;
+    //    public static Component getRootContainer(Component c) {
+    //        Component parent = c.getParent();
+    //        Component current = c;
+    //
+    //        while (parent != null) {
+    //            current = parent;
+    //            parent = current.getParent();
+    //        } // endwhile
+    //
+    //        return current;
+    //    }
 
-        while (parent != null) {
-            current = parent;
-            parent = current.getParent();
-        } // endwhile
-
-        return current;
+    public static Config getMainConfig() {
+        return mainConfig;
+    }
+    
+    public static void setMainConfig(Config cfg) {
+        mainConfig = cfg;
     }
 }
