@@ -17,6 +17,7 @@ public interface Constants
     public static final String        CMD_UPDATE             = "upd";
     public static final String        CMD_RUN                = "run";
     public static final String        CMD_EXIT               = "xit";
+    public static final String        CMD_SELECT_OPTIONAL    = "sel";
     //  used by dlg:
     public static final String        CMD_CANCEL             = "can";
 

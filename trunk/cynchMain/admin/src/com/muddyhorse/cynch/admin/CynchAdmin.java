@@ -1,11 +1,10 @@
 package com.muddyhorse.cynch.admin;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.io.File;
 
-import javax.swing.JFrame;
-import javax.swing.JMenuBar;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
+import javax.swing.*;
 
 /**
  * Admin for cynch manifest file.
@@ -29,16 +28,42 @@ import javax.swing.JTable;
  *  - save / reload
  *  - auto-update
  *
- * @author paf2009
+ * @author pforhan
  */
 public class CynchAdmin
 {
-    private static AdminTableModel model;
+    static AdminTableModel model;
+    static File maniFile;
 
     private static JMenuBar getMenuBar() {
-        // TODO Actually implement getMenuBar
-        System.out.println("reached getMenuBar within CynchAdmin");
-        return null;
+        JMenuBar rv = new JMenuBar();
+        final JMenu fileMenu = new JMenu("File");
+        Action a = new AbstractAction("Open") {
+            private static final long serialVersionUID = 1L;
+            public void actionPerformed(ActionEvent e) {
+                JFileChooser jfc = new JFileChooser();
+                jfc.setCurrentDirectory(new File("C:\\pforhan\\java\\svn\\cynchProjects\\cynchMain\\client\\resources\\"));
+                int rc = jfc.showOpenDialog(fileMenu);
+                if (rc == JFileChooser.APPROVE_OPTION) {
+                    maniFile = jfc.getSelectedFile();
+                    model.setManifest(new AdminManifest(maniFile));
+                } // endif
+            }
+        };
+        fileMenu.add(a);
+        a = new AbstractAction("Save") {
+            private static final long serialVersionUID = 1L;
+            public void actionPerformed(ActionEvent e) {
+                AdminManifest manifest = model.getManifest();
+                if (manifest != null) {
+                    manifest.save(maniFile);
+                } // endif
+            }
+        };
+        fileMenu.add(a);
+        rv.add(fileMenu);
+
+        return rv;
     }
 
     public static void main(String[] args) {

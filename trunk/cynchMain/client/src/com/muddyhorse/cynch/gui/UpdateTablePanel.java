@@ -182,12 +182,12 @@ public class UpdateTablePanel extends java.awt.Panel implements
         for (Operation op : ops) {
             boolean useCheck = true;
 
-            String locVer = vnf.format(op.getLocalVersion());
-            String rmtVer = vnf.format(op.getRemoteVersion());
+            String locVer = vnf.format(op.getLocal().getVersion());
+            String rmtVer = vnf.format(op.getRemote().getVersion());
 
             switch (op.getOperation()) {
                 case nothing:
-                    if (op.getDownloadType() != DownloadType.optional) {
+                    if (op.getRemote().getDownloadType() != DownloadType.optional) {
                         // only display optional nothings
                         continue;
                     } // endif
@@ -207,17 +207,17 @@ public class UpdateTablePanel extends java.awt.Panel implements
                     // do what here?
             } // endswitch
 
-            names[1] = op.getDownloadType().getDescription();
+            names[1] = op.getRemote().getDownloadType().getDescription();
             names[2] = op.getFileID();
-            names[3] = op.getRemoteDescription() == null ? op.getLocalDescription() : op.getRemoteDescription();
+            names[3] = op.getRemote().getDescription() == null ? op.getLocal().getDescription() : op.getRemote().getDescription();
 
-            if (op.getRemoteSize() == 0) { // TODO doublecheck that this change is valid
-                names[4] = snf.format(op.getLocalSize() / 1024);
+            if (op.getRemote().getSize() == 0) { // TODO doublecheck that this change is valid
+                names[4] = snf.format(op.getLocal().getSize() / 1024);
             } else {
-                names[4] = snf.format(op.getRemoteSize() / 1024);
+                names[4] = snf.format(op.getRemote().getSize() / 1024);
             } // endif
 
-            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, op.getDownloadType());
+            buildOpsRow(names, null, gbc, pnl, useCheck ? l : null, op.getRemote().getDownloadType());
 
             gbc.gridy++;
         } // endforeach

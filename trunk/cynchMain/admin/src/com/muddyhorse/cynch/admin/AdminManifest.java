@@ -25,8 +25,9 @@ public class AdminManifest extends RemoteManifest
     }
 
     public AdminManifest(File maniFile) {
-        super(FAKE_URL, "");
+        super(FAKE_URL, "", false);
         this.file = maniFile;
+        load();
     }
 
     @Override
@@ -39,7 +40,7 @@ public class AdminManifest extends RemoteManifest
     public void save(File saveFile) {
         // convert from manifest to string-string map:
         Map<String, String> output = new TreeMap<String, String>();
-        for (RemoteFileInfo rfi : getAllFileInfo()) {
+        for (RemoteFileInfo rfi : getAllFileInfo().values()) {
             output.put(rfi.getFileID(), rfi.toString());
         } // endforeach
 

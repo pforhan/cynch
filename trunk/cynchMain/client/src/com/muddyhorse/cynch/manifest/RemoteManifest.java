@@ -24,18 +24,24 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
     // Constructors:
     //
     public RemoteManifest(URL base, String iniName) {
-        this.base = base;
-        this.iniName = iniName;
-        load();
+        this(base, iniName, true);
     }
 
+    protected RemoteManifest(URL base, String iniName, boolean autoLoad) {
+        this.base = base;
+        this.iniName = iniName;
+        if (autoLoad) {
+            load();
+        } // endif
+    }
+    
     private void parseManifest(Map<String, String> h) {
         Set<Entry<String, String>> entries = h.entrySet();
 
         for (Entry<String, String> entry : entries) {
             String fileID = entry.getKey();
             String csv = entry.getValue();
-            RemoteFileInfo rfi = new RemoteFileInfo(fileID);
+            RemoteFileInfo rfi = createFileInfo(fileID);
 
             try {
                 rfi.loadFromString(base, csv);
@@ -48,12 +54,34 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
         } // endforeach
     }
 
-    public SortedMap<String, RemoteFileInfo> getAllFileInfo() {
-        return remotes;
+    protected RemoteFileInfo createFileInfo(String fileID) {
+        return new RemoteFileInfo(fileID);
+    }
+
+
+    protected Map<String, String> getRawManifest() {
+        Map<String, String> remoteManifest;
+        try {
+            String s = UpdateUtils.getStringFromURL(new URL(base, iniName));
+            remoteManifest = UpdateUtils.stringToHashtable(s);
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+            remoteManifest = null;
+        } // endif
+
+        return remoteManifest;
     }
 
     public boolean isLoaded() {
         return gotRmtManifest;
+    }
+
+    //
+    // Implementation of Manifest methods:
+    //
+    public SortedMap<String, RemoteFileInfo> getAllFileInfo() {
+        return remotes;
     }
 
     public void load() {
@@ -71,17 +99,7 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
         } // endif        
     }
 
-    protected Map<String, String> getRawManifest() {
-        Map<String, String> remoteManifest;
-        try {
-            String s = UpdateUtils.getStringFromURL(new URL(base, iniName));
-            remoteManifest = UpdateUtils.stringToHashtable(s);
-
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            remoteManifest = null;
-        } // endif
-
-        return remoteManifest;
+    public RemoteFileInfo remove(String fileID) {
+        return remotes.remove(fileID);
     }
 }

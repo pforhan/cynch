@@ -66,6 +66,13 @@ public class LocalManifest implements Manifest<LocalFileInfo>
         UpdateUtils.writeHashtable(saveFile.getPath(),output);
     }
 
+    public File getBase() {
+        return base;
+    }
+
+    //
+    // Implementation of Manifest methods:
+    //
     public SortedMap<String, LocalFileInfo> getAllFileInfo() {
         return locals;
     }
@@ -73,7 +80,7 @@ public class LocalManifest implements Manifest<LocalFileInfo>
     public void load() {
         if (base != null
                 && iniName != null) {
-            String s = UpdateUtils.getStringFromFile(base.getPath() + iniName);
+            String s = UpdateUtils.getStringFromFile(base.getPath() + File.separator + iniName);
             if (s == null || s.equals("")) {
                 // try again, just iniName:
                 s = UpdateUtils.getStringFromFile(iniName);
@@ -84,9 +91,13 @@ public class LocalManifest implements Manifest<LocalFileInfo>
                 } // endif
             } // endif
 
-            //        ini = DynamicUpdateUtils.stringToHashtable(s);
+            // ini = DynamicUpdateUtils.stringToHashtable(s);
             Map<String, String> h = UpdateUtils.stringToHashtable(s);
             parseManifest(h);
         } // endif        
+    }
+
+    public LocalFileInfo remove(String fileID) {
+        return locals.remove(fileID);
     }
 }

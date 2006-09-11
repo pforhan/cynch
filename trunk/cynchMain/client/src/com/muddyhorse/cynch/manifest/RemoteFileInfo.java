@@ -29,14 +29,15 @@ public class RemoteFileInfo extends FileInfo
     // Utility methods:
     //
     /**
-     * Assumes csv is URL,version,size,description,postaction,localPath
+     * Assumes csv is dltype,URL,version,size,description,postaction,localPath
      * consider moving to RemoteManifest if/when created
      * @throws MalformedURLException 
      */
     public void loadFromString(URL base, String csv) throws MalformedURLException {
         String[] v = csv.split(Constants.PROPERTY_SEPARATOR);
 
-        rawURL = v[0];
+        setDownloadType(DownloadType.getTypeFromChar(v[0].charAt(0)));
+        rawURL = v[1];
         if (rawURL.contains("://")) {
             // this is an absolute URL, don't use the base
             setPath(new URL(rawURL));
@@ -51,12 +52,13 @@ public class RemoteFileInfo extends FileInfo
             } // endif
         } // endif
 
-        setVersion(Double.parseDouble(v[1]));
-        setSize(Long.parseLong(v[2]));
-        setDescription(v[3]);
-        setAction(PostDownloadActionType.valueOf(v[4]));
+        setVersion(Double.parseDouble(v[2]));
+        setSize(Long.parseLong(v[3]));
+        setDescription(v[4]);
+        setAction(PostDownloadActionType.valueOf(v[5]));
 
-        localFile = new File(v[5]);
+        // TODO need some way to say "same as relative path" -- may need extra var
+        localFile = new File(v[6]);
 
     }
 

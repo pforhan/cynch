@@ -5,7 +5,6 @@ import java.awt.Button;
 import java.awt.TextArea;
 import java.awt.event.ActionEvent;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -75,20 +74,16 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
             }
             if (createDirsAsNeeded || (new File(base)).exists()) {
                 File f = new File(base + duSubDir + element);
-                try {
-                    if (overwriteExisting || !f.exists()) {
-                        // if allowed to overwrite, or the file doesn't exist, do it:
-                        setStatus(ui, "Checking Path...");
-                        UpdateUtils.insurePathToFileExists(f);
-                        setStatus(ui, "Downloading file " + f.toString());
-                        int size = UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + element, f);
-                        if (size == -1) {
-                            System.out.println("ui.m: Error downloading from CP! Name: " + element);
-                        } // endif -- download OK
-                    } // endif -- file exists
-                } catch (FileNotFoundException ex) {
-                    System.out.println(ex);
-                } // endtry
+                if (overwriteExisting || !f.exists()) {
+                    // if allowed to overwrite, or the file doesn't exist, do it:
+                    setStatus(ui, "Checking Path...");
+                    UpdateUtils.insurePathToFileExists(f);
+                    setStatus(ui, "Downloading file " + f.toString());
+                    int size = UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + element, f);
+                    if (size == -1) {
+                        System.out.println("ui.m: Error downloading from CP! Name: " + element);
+                    } // endif -- download OK
+                } // endif -- file exists
             } // endif -- base exists
         } // endfor -- each name in names
     }

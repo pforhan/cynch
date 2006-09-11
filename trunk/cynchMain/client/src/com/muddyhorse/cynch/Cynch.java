@@ -7,12 +7,13 @@ import java.awt.event.MouseEvent;
 
 import com.muddyhorse.cynch.gui.StandardButtonPanel;
 import com.muddyhorse.cynch.gui.UpdateTablePanel;
+import com.muddyhorse.cynch.gui.SelectedOps;
 import com.muddyhorse.cynch.manifest.DownloadType;
 
 /**
  *
  */
-public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
+public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener, SelectedOps.Listener
 {
     //
     // Instance Variables:
@@ -22,6 +23,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
     private TextField            txf;
     private volatile boolean     stopped;
     private Thread               myThread;
+    private StandardButtonPanel  buttonPanel;
 
     //
     // Constructors:
@@ -42,21 +44,29 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
 
         // build gui:
         UpdateTablePanel updateTable = new UpdateTablePanel(cfg);
+        SelectedOps selOps = updateTable.getSelectedOperations();
+        StandardButtonPanel sbp = new StandardButtonPanel(cfg, selOps);
 
+        // add timeout:
         Panel timeoutPanel = new Panel(new GridBagLayout());
         timeoutPanel.setBackground(Constants.CYNCH_GRAY);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 0);
         gbc.fill = GridBagConstraints.BOTH;
-        addTimeoutText(cfg, timeoutPanel, gbc);
+        Cynch cynch = addTimeoutText(cfg, timeoutPanel, gbc);
 
+        // put it together:
         f.add(timeoutPanel, BorderLayout.NORTH);
         f.add(updateTable, BorderLayout.CENTER);
-        f.add(new StandardButtonPanel(cfg, updateTable.getSelectedOperations()), BorderLayout.SOUTH);
+        f.add(sbp, BorderLayout.SOUTH);
+
+        // set up listeners
+        cynch.setButtonPanel(sbp);
+        sbp.addActionListener(cynch);
+        selOps.addListener(cynch);
 
         f.setLocation(200, 100);
         f.pack();
-        //            f.setBounds(200,100,500,475);
         f.setVisible(true);
     }
 
@@ -89,7 +99,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
 
         // add start upd button:
         Button b = new Button("Select optional updates...");
-        b.setActionCommand(Constants.CMD_UPDATE);
+        b.setActionCommand(Constants.CMD_SELECT_OPTIONAL);
         b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
@@ -202,14 +212,15 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
         parent.add(tf, gbc);
 
         final Cynch cy = new Cynch(cfg, actionTimeout, tf); // this allows listener access...
-        tf.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                cy.stop();
-                tf.setText("(Timer Disabled)");
-                tf.removeMouseListener(this);
-            }
-        });
+        MouseAdapter mouseAdapter = new MouseAdapter() {
+                    @Override
+                    public void mouseClicked(MouseEvent e) {
+                        cy.stop();
+                        tf.removeMouseListener(this);
+                    }
+                };
+        parent.addMouseListener(mouseAdapter);
+        tf.addMouseListener(mouseAdapter);
 
         cy.start();
 
@@ -219,6 +230,9 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
     //
     // Data Methods:
     //
+    public void setButtonPanel(StandardButtonPanel buttonPanel) {
+        this.buttonPanel = buttonPanel;
+    }
 
     //
     // Utility methods:
@@ -228,6 +242,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
         if (myThread != null) {
             myThread.interrupt();
         } // endif
+        txf.setText("(Timer Disabled)");
     }
 
     public Thread start() {
@@ -236,7 +251,17 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
         // prepare running thread (to do the countdown):
         myThread = new Thread(this);
         myThread.setName("Countdown thread");
-        myThread.start();
+
+        // give init an extra bit of time to finish up:
+        try {
+            Thread.sleep(500);
+            stopped = false;
+            myThread.start();
+
+        } catch (InterruptedException ex) {
+            //System.out.println("cynch.r: caught InterruptedException!");
+            stopped = true;
+        } // endtry
 
         return myThread;
     }
@@ -257,26 +282,29 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
     // Implementation of the Runnable interface:
     //
     public void run() {
-        // give init an extra bit of time to finish up:
-        try {
-            Thread.sleep(500);
-            stopped = false;
-        } catch (InterruptedException ex) {
-            //System.out.println("cynch.r: caught InterruptedException!");
-        } // endtry
-
+        // main countdown loop:
         while (!stopped && countDownValue > 0) {
             txf.setText(Integer.toString(countDownValue) + Constants.SECONDS_SUFFIX);
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException ex) {
                 //System.out.println("cynch.r: caught InterruptedException!");
+                stopped = true;
             } // endtry
             --countDownValue;
         } // endwhile
 
+        // only do action if countdown wasn't aborted:
         if (!stopped) {
-            runApplicationAndExit(cfg);
+            // pick post-countdown action:
+            if (buttonPanel != null && buttonPanel.isUpdateAvailable()) {
+                // we have a buttonpanel with updates, use it to update:
+                buttonPanel.updateAndRun();
+
+            } else {
+                // no button panel, or no updates, just run:
+                runApplicationAndExit(cfg);
+            } // endif
         } // endif
     }
 
@@ -284,21 +312,29 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
     // Implementation of the ActionListener interface:
     //
     public void actionPerformed(ActionEvent e) {
-        stopped = true;
+        // any action coming in should mean we stop:
+        stop();
         String ac = e.getActionCommand();
+
         if (Constants.CMD_EXIT.equals(ac)) {
             System.exit(0);
+
         } else if (Constants.CMD_RUN.equals(ac)) {
             runApplicationAndExit(cfg);
-        } else if (Constants.CMD_UPDATE.equals(ac)) {
+
+        } else if (Constants.CMD_SELECT_OPTIONAL.equals(ac)) {
             UpdateUtils.getMainFrame().setVisible(false);
             showFullGUI(cfg);
         } // endif
     }
 
     //
-    // Inner classes:
+    // Implementation of SelOps.Listener method:
     //
+    public void selectedIDsChanged(boolean anySelected) {
+        // any change to table will stop the timer:
+        stop();
+    }
 
     //
     // Main method:
@@ -350,7 +386,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener
                  //*/
                 showTimeoutDialog(cfg);
 
-            } else if (!cfg.gotRemoteConfig()) {
+            } else if (!cfg.gotRemoteManifest()) {
                 // must have been an error in connecting...
                 /*
                  fr.add(new java.awt.Label("couldn't connect to upd server..."));
