@@ -5,6 +5,9 @@ import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.muddyhorse.cynch.Config;
 import com.muddyhorse.cynch.Constants;
@@ -22,14 +25,15 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     /**
      * 
      */
-    private static final long serialVersionUID = 1L;
+    private static final long   serialVersionUID = 1L;
     //
     // Instance Variables:
     //
-    private Config            cfg;
-    private SelectedOps       selOps;
-    private Button            upd;
-    private ProgressDialog    d;
+    private Config              cfg;
+    private SelectedOps         selOps;
+    private Button              upd;
+    private ProgressDialog      progressDlg;
+    private Set<ActionListener> listeners        = new HashSet<ActionListener>();
 
     //
     // Constructors:
@@ -55,15 +59,15 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
         gbc.gridy = 0;
         gbc.weightx = 0.5;
         gbc.gridx = 0;
-        String s = cfg.getAppShortName();
+        String shortName = cfg.getAppShortName();
 
-        upd = new Button("Update and Run " + s);
+        upd = new Button("Update and Run " + shortName);
         upd.setActionCommand(Constants.CMD_UPDATE);
         upd.addActionListener(this);
-        upd.setEnabled(getUpdateState(false)); // first time through, no optz are sel'd
+        upd.setEnabled(getUpdateState(false)); // first time through, no optionals are sel'd
         add(upd, gbc);
 
-        Button b = new Button("Run " + s + " without Updates");
+        Button b = new Button("Run " + shortName + " without Updates");
         b.setActionCommand(Constants.CMD_RUN);
         b.setEnabled(getRunState());
         b.addActionListener(this);
@@ -86,6 +90,10 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     //
     // Utility methods:
     //
+    public boolean isUpdateAvailable() {
+        return getUpdateState(false);
+    }
+
     private boolean getUpdateState(boolean anyOptional) {
         // if there are any downloads available and selected, allow run (with updates)
         long ttl = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null)
@@ -100,9 +108,9 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     }
 
     private void runApplication() {
-        if (d != null) {
-            d.setVisible(false);
-            d.dispose();
+        if (progressDlg != null) {
+            progressDlg.setVisible(false);
+            progressDlg.dispose();
         } // endif
         Cynch.runApplicationAndExit(cfg);
     }
@@ -118,21 +126,23 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
         try {
             Thread.sleep(150);
             int errTot;
-            errTot = UpdateUtils.performAllOperations(cfg, DownloadType.critical, null, d);
+            errTot = UpdateUtils.performAllOperations(cfg, DownloadType.critical, null, progressDlg);
             System.out.println("sbp.r: error total (crit) was: " + errTot);
-            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.required, null, d);
+            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.required, null, progressDlg);
             System.out.println("sbp.r: error total (+req) was: " + errTot);
             // do optional:
             // do "ALL" types because deletes are always optional.
-            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.all, selOps.getSelectedIDs(), d);
+            errTot += UpdateUtils.performAllOperations(cfg, DownloadType.all, selOps.getSelectedIDs(), progressDlg);
             System.out.println("sbp.r: error total (+opt) was: " + errTot);
+
+            cfg.getLocalManifest().save();
 
             // need to check errTot here to see if we should proceed...
             runApplication();
         } catch (InterruptedException ex) {
             System.out.println("sbp.r: caught InterruptedException... @" + System.currentTimeMillis());
-            d.setVisible(false);
-            d.dispose();
+            progressDlg.setVisible(false);
+            progressDlg.dispose();
 
             // obtain correct info for next download attempt:
             cfg.reloadINI();
@@ -148,6 +158,24 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
     }
 
     //
+    // Action source methods:
+    //
+    public void addActionListener(ActionListener l) {
+        listeners.add(l);
+    }
+
+    public void removeActionListener(ActionListener l) {
+        listeners.remove(l);
+    }
+    
+    private void fireActionEvent(String cmd) {
+        ActionEvent e = new ActionEvent(this, ActionEvent.ACTION_PERFORMED, cmd);
+        for (ActionListener l : listeners) {
+            l.actionPerformed(e);
+        } // endforeach
+    }
+
+    //
     // Implementation of the ActionListener interface:
     //
     public void actionPerformed(ActionEvent e) {
@@ -157,20 +185,26 @@ public class StandardButtonPanel extends java.awt.Panel implements java.awt.even
         } else if (Constants.CMD_RUN.equals(ac)) {
             runApplication();
         } else if (Constants.CMD_UPDATE.equals(ac)) {
-            // do required/critical:
-            Frame f = UpdateUtils.getMainFrame();
-
-            long ttlSize = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null);
-            ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.required, null);
-            ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.all, selOps.getSelectedIDs());
-            d = new ProgressDialog(f, ttlSize);
-            d.setLocationRelativeTo(f);
-
-            Thread t = new Thread(this);
-            //            t.setDaemon(true); // would this work?
-            t.setName("Operations thread");
-            t.start();
-            d.setVisible(true);
+            updateAndRun();
         } // endif
+    }
+
+    public void updateAndRun() {
+        // notify listeners:
+        fireActionEvent(Constants.CMD_UPDATE);
+
+        // do required/critical:
+        Frame f = UpdateUtils.getMainFrame();
+
+        long ttlSize = UpdateUtils.countDownloadSize(cfg, DownloadType.critical, null);
+        ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.required, null);
+        ttlSize += UpdateUtils.countDownloadSize(cfg, DownloadType.all, selOps.getSelectedIDs());
+        progressDlg = new ProgressDialog(f, ttlSize);
+        progressDlg.setLocationRelativeTo(f);
+
+        Thread t = new Thread(this);
+        t.setName("Operations thread");
+        t.start();
+        progressDlg.setVisible(true);
     }
 }

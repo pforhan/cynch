@@ -75,11 +75,11 @@ public class Config
         return ini.get(Constants.INI_APP_SHORT_NAME);
     }
 
-    public String getRemoteConfigName1() {
+    public String getRemoteConfigName() {
         return ini.get(Constants.INI_REMOTE_CORE);
     }
 
-    public String getLocalConfigName1() {
+    public String getLocalConfigName() {
         return ini.get(Constants.INI_LOCAL_CORE);
     }
 
@@ -99,6 +99,14 @@ public class Config
         return localManifest;
     }
 
+    public RemoteManifest getRemoteManifest() {
+        return remoteManifest;
+    }
+    
+    public boolean gotRemoteManifest() {
+        return remoteManifest.isLoaded();
+    }
+    
     //
     // Utility methods:
     //
@@ -153,10 +161,10 @@ public class Config
 
     public void reloadOperations(boolean loadRemote) {
         try {
-            localManifest = new LocalManifest(new File(getLocalBase()), getLocalConfigName1());
+            localManifest = new LocalManifest(new File(getLocalBase()), getLocalConfigName());
             localManifest.removeNonExistantFiles();
             URL rmtBaseURL = new URL(getRemoteBase());
-            remoteManifest = new RemoteManifest(rmtBaseURL, getRemoteConfigName1());
+            remoteManifest = new RemoteManifest(rmtBaseURL, getRemoteConfigName());
 
             if (!remoteManifest.isLoaded()) {
                 operations.clear();

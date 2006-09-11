@@ -6,7 +6,7 @@ import com.muddyhorse.cynch.Constants;
 
 /**
  * 
- * @author paf2009
+ * @author pforhan
  *
  */
 public class LocalFileInfo extends FileInfo

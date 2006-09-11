@@ -1,4 +1,4 @@
-CYNCH_00=!,cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511.0,Cynch 1
+CYNCH_00=!,cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511.0,Cynch 1,nothing,c:\temp
 CYNCH_01=!,cynch/com/muddyhorse/cynch/DUConstants.class,1.0,1755.0,Cynch 2
 CYNCH_02=!,cynch/com/muddyhorse/cynch/DUOperation.class,1.0,2453.0,Cynch 3
 CYNCH_03=!,cynch/com/muddyhorse/cynch/DUProgressDialog$ProgressBar.class,1.0,1194.0,Cynch 4

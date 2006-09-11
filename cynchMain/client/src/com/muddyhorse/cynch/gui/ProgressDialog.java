@@ -220,9 +220,10 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     // Implementation of the DUProgressListener interface:
     //
     public void starting(Operation op) {
+        String rdesc = op.getRemote().getDescription();
         //System.out.println("pd.s: starting op "+op);
-        String desc = op.getRemoteDescription() == null ? op.getLocalDescription() : op.getRemoteDescription();
-        rsize = op.getRemoteSize();
+        String desc = rdesc != null ? rdesc : op.getLocal().getDescription();
+        rsize = op.getRemote().getSize();
 
         opTxt.setText(op.getOperation().getDescription());
         whatTxt.setText(op.getFileID() + " -- " + desc);

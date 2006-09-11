@@ -1,5 +1,6 @@
 package com.muddyhorse.cynch;
 
+import java.awt.Component;
 import java.awt.Frame;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -25,6 +26,8 @@ public class UpdateUtils implements Constants
     //
     private static final int BUFFER_SIZE = 10000;
 
+    private static final RemoteFileInfo DUMMY_REMOTE_INFO = new RemoteFileInfo("");
+
     //    private static Map<String, String> parms       = new HashMap<String, String>();
 
     private static Frame     mainframe;
@@ -35,14 +38,18 @@ public class UpdateUtils implements Constants
     public static String getStringFromClasspath(Class<?> base, String filename) {
         try {
             InputStream is = base.getResourceAsStream(filename);
-            int available = is.available();
-            byte buffer[] = new byte[available];
-            is.read(buffer);
-            is.close();
+            if (is != null) {
+                int available = is.available();
+                byte buffer[] = new byte[available];
+                is.read(buffer);
+                is.close();
+                String tmp = new String(buffer);
+                //System.out.println("\nfrom CP:"+filename+":\n"+tmp);
+                return tmp;
 
-            String tmp = new String(buffer);
-            //System.out.println("\nfrom CP:"+filename+":\n"+tmp);
-            return tmp;
+            } else {
+                return "";
+            } // endif            
         } catch (Exception ex) {
             ex.printStackTrace();
             return "";
@@ -106,7 +113,7 @@ public class UpdateUtils implements Constants
             //System.out.println("\nfrom file:"+filename+":\n"+tmp);
             return tmp;
         } catch (Exception ex) {
-            System.out.println(ex);
+//            System.out.println(ex);
             //            ex.printStackTrace();
             return "";
         } // endtry
@@ -255,7 +262,7 @@ public class UpdateUtils implements Constants
         } // endtry
     }
 
-    /** Compare local and remote hashtables and return a hashtable
+    /** Compare local and remote manifests and return a hashtable
      *  of operations to perform.
      */
     public static Map<String, Operation> compareManifests(LocalManifest localManifest, RemoteManifest remoteManifest) {
@@ -315,7 +322,7 @@ public class UpdateUtils implements Constants
 
             Operation op = new Operation(key);
             op.setRemote(rfi);
-            op.setLocal(null);
+            op.setLocal(rfi.getLocalInfo(localManifest.getBase()));
             op.setOperation(OperationType.download);
 
             rv.put(key, op);
@@ -386,8 +393,7 @@ public class UpdateUtils implements Constants
      * @return the count of errors that occurred in performing the
      *   various operations.
      */
-    public static int performOperations(Config cfg, DownloadType type, List<Operation> ops, ProgressListener l)
-            throws InterruptedException {
+    public static int performOperations(Config cfg, DownloadType type, List<Operation> ops, ProgressListener l) {
         int errorCnt = 0;
 
         for (Operation op : ops) {
@@ -409,10 +415,10 @@ public class UpdateUtils implements Constants
      * @param cfg the DUConfig containing context information
      * @return true if the operation was successful.
      */
-    public static boolean performOperation(Config cfg, Operation op, ProgressListener l) throws InterruptedException {
+    public static boolean performOperation(Config cfg, Operation op, ProgressListener l) {
         System.out.println("uu.pO: starting...");
         try {
-            int dlSize = 0;
+            long dlSize = 0;
             l.starting(op);
             RemoteFileInfo rfi = op.getRemote();
             URL u;
@@ -421,18 +427,26 @@ public class UpdateUtils implements Constants
 
             } else {
                 u = null;
+                // remote is not allowed for update or download
+                switch (op.getOperation()) {
+                    case download:
+                    case update:
+                        throw new IllegalArgumentException("null remote file info for operation");
+                    default:
+                } // endswitch
+                rfi = DUMMY_REMOTE_INFO;
             } // endif
 
             LocalFileInfo lfi = op.getLocal();
             if (lfi == null) {
-                // almost safe to use rfi here... both FIs should not be null at the same time...
-                lfi = rfi.getLocalInfo(new File(cfg.getLocalBase()));
+                throw new IllegalStateException("Operation missing file info; unable to process");
             } // endif
 
             final File n = lfi.getPath();
 
             // do something based on the operatoin
             switch (op.getOperation()) {
+                case download:
                 case update: {
                     String tempPrefix = cfg.getAppShortName();
                     String tempSuffix = "_Cynch.tmp";
@@ -454,37 +468,37 @@ public class UpdateUtils implements Constants
                         postProcessDownload(n, tempf, rfi.getAction());
 
                     } else {
-                        throw new IllegalStateException("(Update)File verification problem: " + tempf);
+                        throw new IllegalStateException("("+op.getOperation()+") File verification problem: " + tempf);
                     } // endif
                 }
                 break;
-                case download: {
-                    // need to:
-                    // * download to real name
-                    // * verfiy contents
-                    insurePathToFileExists(n);
-                    // TODO set up temporary ops, then call postProc
-                    dlSize = getFileFromURL(u, n, l);
-                    if (dlSize > 0 && verifyFile(n)) {
-                        // no action necessary here.
-                    } else {
-                        throw new Exception("(Download)File verification problem: " + n);
-                    } // endif
-                }
-                break;
+//                case download: {
+//                    // need to:
+//                    // * download to real name
+//                    // * verfiy contents
+//                    insurePathToFileExists(n);
+//                    // todo - set up temporary ops like update above, then call postProc;  in fact, might be able to merge with above...
+//                    dlSize = getFileFromURL(u, n, l);
+//                    if (dlSize > 0 && verifyFile(n)) {
+//                        // no action necessary here.
+//                    } else {
+//                        throw new IllegalStateException("(Download)File verification problem: " + n);
+//                    } // endif
+//                }
+//                break;
                 case delete: {
                     // need to:
                     // * delete original
-                    n = cfg.get(INI_LOCAL_BASE) + op.getLocalPath();
-                    f = new File(n);
-                    if (!f.delete()) {
-                        throw new Exception("File deletion problem: " + n);
+                    // * ?delete backup
+                    // perhaps this should work like update, ie, del the backup, rename to .bak
+                    if (!n.delete()) {
+                        throw new IllegalStateException("File deletion problem: " + n);
                     } // endif
 
-                    cfg.getLocalFiles().remove(op.getFileID());
+                    // remove from local manifest:
+                    cfg.getLocalManifest().remove(op.getFileID());
                     // save updated config info:
-                    writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
-
+                    cfg.getLocalManifest().save();
                 }
                 break;
                 case nothing: {
@@ -492,28 +506,23 @@ public class UpdateUtils implements Constants
                 }
                 break;
                 default:
-                    throw new Exception("Unknown operation type: " + op.getOperation());
+                    throw new IllegalStateException("Unknown operation type: " + op.getOperation());
             } // endswitch
 
-            op.setRemoteSize(dlSize);
+            // make sure remote is correct in size:
+            op.getRemote().setSize(dlSize);
 
             if (op.getOperation() != OperationType.nothing) { // no file chgs on nothings...
                 // update config info:
-                // note that, once the download is complete, the remote info
-                //  and the local info should be the same.
-                // thus, use remote info to build vector:
-                cfg.getLocalFiles().put(op.getFileID(), op.toVector(false));
                 // save updated config info:
-                writeHashtable(cfg.getLocalConfigName(), cfg.getLocalFiles());
+                cfg.getLocalManifest().save();
             } // endif -- not nothing
+
             l.finished(op, true);
 
             return true;
 
-        } catch (InterruptedException ix) {
-            throw ix;
-
-        } catch (Exception ex) {
+       } catch (Exception ex) {
             System.out.println("uu:" + ex);
             ex.printStackTrace();
             l.finished(op, false);
@@ -568,33 +577,36 @@ public class UpdateUtils implements Constants
         Enumeration<? extends ZipEntry> enumer = zf.entries();
         while (enumer.hasMoreElements()) {
             ZipEntry ze = enumer.nextElement();
-            ze.getName();
-            // TODO finish unzipping!  Need to run a few tests, too
+            if (!ze.isDirectory()) {
+                // we don't want to process directories, since the stream stuff will fail...
+                //  they will get created by insure, below.
+                File newf = new File(targetFile, ze.getName());
+                insurePathToFileExists(newf);
+                OutputStream zout = new BufferedOutputStream(new FileOutputStream(newf));
+                InputStream zin   = zf.getInputStream(ze);
+                connectStreams(zin, zout);
+            } // endif                
         } // endwhile
     }
 
-    /*
-     public static int countOperations(DUConfig cfg, int type, Vector ids) {
-     int total = 0;
-     Enumeration enumer = cfg.getOperations().elements();
-     while (enumer.hasMoreElements()) {
-     DUOperation op = (DUOperation)enumer.nextElement();
+    public static void connectStreams(InputStream in, OutputStream out) throws IOException {
+        byte readBuffer[] = new byte[BUFFER_SIZE];
 
-     if (type == TYPE_ALL
-     || type == op.type) {
-     // same type
-     if (ids == null
-     || ids.contains(op.fileID)) {
-     // in vector, or vector null
-     if (op.operation != DUOperation.OP_NOTHING) {
-     ++total;
-     } // endif
-     } // endif
-     } // endif
-     } // endwhile
-     return total;
-     }
-     //*/
+        int amount = 0;
+        while (amount >= 0) {
+            amount = in.read(readBuffer, 0, BUFFER_SIZE);
+            if (amount == -1) {
+                // eof
+                break;
+            } // endif
+
+            // commit buffer:
+            out.write(readBuffer, 0, amount);
+        } // endwhile
+
+        in.close();
+        out.close();
+    }
 
     /** Counts the total download size (in bytes) of downloads and
      *  updates.  Operations that are deletes or "nothing"s do not
@@ -610,12 +622,12 @@ public class UpdateUtils implements Constants
         try {
             Collection<Operation> ops = cfg.getOperations().values();
             for (Operation op : ops) {
-                if (type == DownloadType.all || type == op.getDownloadType()) {
+                if (type == DownloadType.all || type == op.getRemote().getDownloadType()) {
                     // same type
                     if (ids == null || ids.contains(op.getFileID())) {
                         // in vector, or vector null
                         if (op.getOperation() == OperationType.update || op.getOperation() == OperationType.download) {
-                            total += op.getRemoteSize();
+                            total += op.getRemote().getSize();
                         } // endif
                     } // endif
                 } // endif
@@ -641,20 +653,15 @@ public class UpdateUtils implements Constants
      *  operations, or -1 if the operation was interrupted (by, for example,
      *  user intervention).
      */
-    public static int performAllOperations(Config cfg, DownloadType type, List<String> ids, ProgressListener l)
-            throws InterruptedException {
-        try {
-            int errorCnt;
-            Map<OperationType, List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
-            errorCnt = performOperations(cfg, type, opSets.get(OperationType.download), l);
-            errorCnt += performOperations(cfg, type, opSets.get(OperationType.update), l);
-            errorCnt += performOperations(cfg, type, opSets.get(OperationType.delete), l);
+    public static int performAllOperations(Config cfg, DownloadType type, List<String> ids, ProgressListener l) {
+        int errorCnt;
+        Map<OperationType, List<Operation>> opSets = sortOperationsByOp(cfg.getOperations(), ids);
+        errorCnt = performOperations(cfg, type, opSets.get(OperationType.download), l);
+        errorCnt += performOperations(cfg, type, opSets.get(OperationType.update), l);
+        errorCnt += performOperations(cfg, type, opSets.get(OperationType.delete), l);
 
-            // of course, skip OP_NOTHING operations...
-            return errorCnt;
-        } catch (InterruptedException ix) {
-            throw ix;
-        } // endtry
+        // of course, skip OP_NOTHING operations...
+        return errorCnt;
     }
 
     /**
@@ -860,32 +867,24 @@ public class UpdateUtils implements Constants
         } // endtry
     }
 
-    /*
-     public static boolean startJavaApplication(String jarName, String mainClass, String args[]) {
-     URL[] ulist = {new URL(jarName)};
-     ClassLoader cl = new URLClassLoader(ulist)
-
-     }
-     //*/
-
     /** This method insures that a path exists to allow creation
      *  of the specified file.
      */
-    public static void insurePathToFileExists(String filename) throws FileNotFoundException {
+    public static void insurePathToFileExists(String filename) {
         insurePathToFileExists(new File(filename));
     }
 
     /** This method insures that a path exists to allow creation
      *  of the specified file.
      */
-    public static void insurePathToFileExists(File f) throws FileNotFoundException {
+    public static void insurePathToFileExists(File f) {
         File p = f.getParentFile();
         //System.out.println("uu.iPE: parent of "+filename+" is "+parent);
 
         if (!p.exists()) {
             // parent doesn't exist, create it:
             if (!p.mkdirs()) {
-                throw new FileNotFoundException("Unable to make directory " + parent);
+                throw new IllegalStateException("Unable to make directory " + p.getPath());
             } // endif -- second mkdir unsuc
         } // endif -- parent exists
     }
@@ -902,28 +901,16 @@ public class UpdateUtils implements Constants
         // TODO implement verifyFile
         return true;
     }
-
-    /*
-     public static String buildClasspath(DUConfig cfg) {
-     }
-
-     public static void writeToLog(String s) {
-     // list when say no.
-     }
-
-     public static void writeToLog(Exception ex) {
-     // list when say no.
-     }
-     //*/
-
-    //    public static void main(String[] args) {
-    //try {
-    //        System.out.println(getStringFromURL("http://developer.earthweb.com/onlineopinion/onlineopinion.js"));
-    ////        insurePathToFileExists(args[0]);
-    //////        getFileFromURL(new URL(args[0]), new File(args[1]), null);
-    //} catch (Exception ex) {
-    //System.out.println(ex);
-    ////            ex.printStackTrace();
-    //} // endtry
-    //    }
+    
+    public static Component getRootContainer(Component c) {
+        Component parent = c.getParent();
+        Component current = c;
+        
+        while (parent != null) {
+            current = parent;
+            parent = current.getParent();
+        } // endwhile
+        
+        return current;
+    }
 }
