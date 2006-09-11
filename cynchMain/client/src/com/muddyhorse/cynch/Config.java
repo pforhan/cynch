@@ -51,6 +51,14 @@ public class Config
         }
     }
 
+    public boolean isTimeoutAbortAllowed() {
+        return Boolean.valueOf(ini.get(Constants.INI_ALLOW_TIMEOUT_ABORT));
+    }
+
+    public boolean isExitAllowed() {
+        return Boolean.valueOf(ini.get(Constants.INI_ALLOW_EXIT));
+    }
+    
     public String getCommand() {
         return ini.get(Constants.INI_MAIN_CLASS);
     }
@@ -83,8 +91,8 @@ public class Config
         return ini.get(Constants.INI_LOCAL_MANIFEST);
     }
 
-    public String getRemoteBase() {
-        return ini.get(Constants.INI_REMOTE_BASE);
+    public String[] getRemoteBases() {
+        return ini.get(Constants.INI_REMOTE_BASES).split(Constants.PROPERTY_SEPARATOR);
     }
     
     public String getLocalBase() {
@@ -127,7 +135,7 @@ public class Config
 
         // extract information to try to find the remote INI:
         String iname = h.get(Constants.INI_INI_NAME);
-        String rname = h.get(Constants.INI_REMOTE_BASE) + iname;
+        String rname = h.get(Constants.INI_REMOTE_BASES) + iname;
         // this should be in format remote-root/ini-name
         // note that remote-root should be terminated by a "/"
 
@@ -163,19 +171,22 @@ public class Config
         try {
             localManifest = new LocalManifest(new File(getLocalBase()), getLocalConfigName());
             localManifest.removeNonExistantFiles();
-            URL rmtBaseURL = new URL(getRemoteBase());
-            remoteManifest = new RemoteManifest(rmtBaseURL, getRemoteConfigName());
+            String[] remoteBases = getRemoteBases();
+            for (String base : remoteBases) {
+                URL rmtBaseURL = new URL(base);
+                remoteManifest = new RemoteManifest(rmtBaseURL, getRemoteConfigName());
+                if (!remoteManifest.isLoaded()) {
+                    operations.clear();
 
-            if (!remoteManifest.isLoaded()) {
-                operations.clear();
-
-            } else {
-                operations.putAll(UpdateUtils.compareManifests(localManifest, remoteManifest));
-            } // endif
+                } else {
+                    // got a hit; stop checking URLs
+                    operations.putAll(UpdateUtils.compareManifests(localManifest, remoteManifest));
+                    break;
+                } // endif
+            } // endforeach            
 
         } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
-
 }

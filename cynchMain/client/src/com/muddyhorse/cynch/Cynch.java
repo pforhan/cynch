@@ -18,12 +18,12 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     //
     // Instance Variables:
     //
-    private Config               cfg;
-    private int                  countDownValue;
-    private TextField            txf;
-    private volatile boolean     stopped;
-    private Thread               myThread;
-    private StandardButtonPanel  buttonPanel;
+    private Config              cfg;
+    private int                 countDownValue;
+    private TextField           txf;
+    private volatile boolean    stopped;
+    private Thread              myThread;
+    private StandardButtonPanel buttonPanel;
 
     //
     // Constructors:
@@ -112,12 +112,14 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         f.add(b, gbc);
 
         // the next two are intentionally out of order, so that I can do a requestFocus...
-        // add exit button:
-        b = new Button("Exit");
-        b.setActionCommand(Constants.CMD_EXIT);
-        b.addActionListener(cy);
-        gbc.gridx = 2;
-        f.add(b, gbc);
+        if (cfg.isExitAllowed()) {
+            // add exit button:
+            b = new Button("Exit");
+            b.setActionCommand(Constants.CMD_EXIT);
+            b.addActionListener(cy);
+            gbc.gridx = 2;
+            f.add(b, gbc);
+        } // endif        
 
         // add start app button:
         b = new Button("Run " + s);
@@ -153,11 +155,11 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         Label lbl = new Label(s + " (" + cfg.getAppDescription() + ")");
         f.add(lbl, gbc);
 
-        lbl = new Label("Unable to connect to update server.");
+        lbl = new Label("Unable to connect to update server(s).");
         gbc.gridy = 5;
         f.add(lbl, gbc);
 
-        lbl = new Label("(Server address: " + cfg.get(Constants.INI_REMOTE_BASE) + ")");
+        lbl = new Label("(Server addresses: " + cfg.get(Constants.INI_REMOTE_BASES) + ")");
         gbc.gridy = 6;
         f.add(lbl, gbc);
 
@@ -165,9 +167,6 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
 
         // the next two are intentionally out of order, so that I can do a requestFocus (with the same ref)...
         // add exit button:
-        Button b = new Button("Exit");
-        b.setActionCommand(Constants.CMD_EXIT);
-        b.addActionListener(cy);
         gbc.insets.top = 15;
         gbc.insets.bottom = 5;
         gbc.insets.left = 4;
@@ -177,7 +176,13 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         gbc.gridwidth = 1;
         gbc.gridy = 15;
         gbc.gridx = 2;
-        f.add(b, gbc);
+        Button b;
+        if (cfg.isExitAllowed()) {
+            b = new Button("Exit");
+            b.setActionCommand(Constants.CMD_EXIT);
+            b.addActionListener(cy);
+            f.add(b, gbc);
+        } // endif
 
         // add start app button:
         b = new Button("Run " + s);
@@ -212,16 +217,17 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         parent.add(tf, gbc);
 
         final Cynch cy = new Cynch(cfg, actionTimeout, tf); // this allows listener access...
-        MouseAdapter mouseAdapter = new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        cy.stop();
-                        tf.removeMouseListener(this);
-                    }
-                };
-        parent.addMouseListener(mouseAdapter);
-        tf.addMouseListener(mouseAdapter);
-
+        if (cfg.isTimeoutAbortAllowed()) {
+            MouseAdapter mouseAdapter = new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    cy.stop();
+                    tf.removeMouseListener(this);
+                }
+            };
+            parent.addMouseListener(mouseAdapter);
+            tf.addMouseListener(mouseAdapter);
+        } // endif        
         cy.start();
 
         return cy;
@@ -238,6 +244,12 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     // Utility methods:
     //
     public void stop() {
+        if (cfg.isTimeoutAbortAllowed()) {
+            forceStop();
+        } // endif        
+    }
+
+    private void forceStop() {
         stopped = true;
         if (myThread != null) {
             myThread.interrupt();
@@ -246,7 +258,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
     }
 
     public Thread start() {
-        stop();
+        forceStop();
 
         // prepare running thread (to do the countdown):
         myThread = new Thread(this);
@@ -316,7 +328,8 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
         stop();
         String ac = e.getActionCommand();
 
-        if (Constants.CMD_EXIT.equals(ac)) {
+        if (Constants.CMD_EXIT.equals(ac)
+                && cfg.isExitAllowed()) {
             System.exit(0);
 
         } else if (Constants.CMD_RUN.equals(ac)) {
@@ -351,6 +364,7 @@ public class Cynch implements java.lang.Runnable, java.awt.event.ActionListener,
             } // endif
 
             Config cfg = new Config(ini, true);
+            UpdateUtils.setMainConfig(cfg);
 
             /* investigate here what to display --
              * Critical ops      -- display full DU GUI
