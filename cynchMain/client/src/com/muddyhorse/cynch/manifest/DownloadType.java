@@ -9,7 +9,8 @@ public enum DownloadType {
     critical("Critical", Constants.TYPE_CHAR_CRIT),
     required("Required", Constants.TYPE_CHAR_REQUIRED),
     optional("Optional", Constants.TYPE_CHAR_OPT),
-    all("All", (char)-1);
+//    delete  ("Delete"  , Constants.TYPE_CHAR_DEL),
+    all     ("All"     , (char)-1);
 
     //
     // Static Utility methods:

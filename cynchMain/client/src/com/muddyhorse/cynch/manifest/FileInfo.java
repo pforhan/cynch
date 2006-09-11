@@ -1,5 +1,7 @@
 package com.muddyhorse.cynch.manifest;
 
+import java.math.BigDecimal;
+
 
 public abstract class FileInfo
 {
@@ -7,7 +9,7 @@ public abstract class FileInfo
     // Instance Variables:
     //
     private final String fileID;
-    private double version;
+    private BigDecimal version;
     private String description;
 
     //
@@ -24,11 +26,11 @@ public abstract class FileInfo
         return fileID;
     }
 
-    public double getVersion() {
+    public BigDecimal getVersion() {
         return version;
     }
 
-    public void setVersion(double version) {
+    public void setVersion(BigDecimal version) {
         this.version = version;
     }
 

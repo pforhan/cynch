@@ -6,6 +6,7 @@ import java.awt.event.ActionEvent;
 
 import com.muddyhorse.cynch.Constants;
 import com.muddyhorse.cynch.manifest.Operation;
+import com.muddyhorse.cynch.manifest.RemoteFileInfo;
 
 /**
  *
@@ -220,10 +221,22 @@ public class ProgressDialog extends java.awt.Dialog implements com.muddyhorse.cy
     // Implementation of the DUProgressListener interface:
     //
     public void starting(Operation op) {
-        String rdesc = op.getRemote().getDescription();
+        RemoteFileInfo remote = op.getRemote();
+        String rdesc;
+        if (remote != null) {
+            rdesc = remote.getDescription();
+        } else {
+            rdesc = op.getLocal().getDescription();
+        } // endif
+
         //System.out.println("pd.s: starting op "+op);
         String desc = rdesc != null ? rdesc : op.getLocal().getDescription();
-        rsize = op.getRemote().getSize();
+        if (remote != null) {
+            rsize = remote.getSize();
+
+        } else {
+            rsize = op.getLocal().getSize();
+        } // endif
 
         opTxt.setText(op.getOperation().getDescription());
         whatTxt.setText(op.getFileID() + " -- " + desc);

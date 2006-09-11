@@ -76,11 +76,11 @@ public class Config
     }
 
     public String getRemoteConfigName() {
-        return ini.get(Constants.INI_REMOTE_CORE);
+        return ini.get(Constants.INI_REMOTE_MANIFEST);
     }
 
     public String getLocalConfigName() {
-        return ini.get(Constants.INI_LOCAL_CORE);
+        return ini.get(Constants.INI_LOCAL_MANIFEST);
     }
 
     public String getRemoteBase() {

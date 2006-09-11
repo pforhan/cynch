@@ -1,6 +1,7 @@
 package com.muddyhorse.cynch.manifest;
 
 import java.io.File;
+import java.math.BigDecimal;
 
 import com.muddyhorse.cynch.Constants;
 
@@ -14,7 +15,6 @@ public class LocalFileInfo extends FileInfo
     //
     // Instance Variables:
     //
-    private String pathString;
     private File path;
 
     //
@@ -39,9 +39,9 @@ public class LocalFileInfo extends FileInfo
     public void loadFromString(String csv) {
         String[] v = csv.split(Constants.PROPERTY_SEPARATOR);
         
-        pathString = v[0];
+        String pathString = v[0];
         setPath(new File(pathString));
-        setVersion(Double.parseDouble(v[1]));
+        setVersion(new BigDecimal(v[1]));
         setDescription(v[2]);
     }
 
@@ -95,7 +95,7 @@ public class LocalFileInfo extends FileInfo
     //
     @Override
     public String toString() {
-        return pathString + Constants.PROPERTY_SEPARATOR + getVersion() + Constants.PROPERTY_SEPARATOR + getDescription() + Constants.PROPERTY_SEPARATOR;
+        return path + Constants.PROPERTY_SEPARATOR + getVersion() + Constants.PROPERTY_SEPARATOR + getDescription() + Constants.PROPERTY_SEPARATOR;
     }
 
 }

@@ -3,6 +3,7 @@ package com.muddyhorse.cynch;
 import java.awt.Component;
 import java.awt.Frame;
 import java.io.*;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -24,13 +25,13 @@ public class UpdateUtils implements Constants
     //
     // Class variables:
     //
-    private static final int BUFFER_SIZE = 10000;
+    private static final int            BUFFER_SIZE       = 10000;
 
-    private static final RemoteFileInfo DUMMY_REMOTE_INFO = new RemoteFileInfo("");
+    public static final RemoteFileInfo DUMMY_REMOTE_INFO = new RemoteFileInfo("");
 
     //    private static Map<String, String> parms       = new HashMap<String, String>();
 
-    private static Frame     mainframe;
+    private static Frame                mainframe;
 
     //
     // File Retrieval methods:
@@ -112,8 +113,9 @@ public class UpdateUtils implements Constants
             String tmp = new String(buffer);
             //System.out.println("\nfrom file:"+filename+":\n"+tmp);
             return tmp;
+
         } catch (Exception ex) {
-//            System.out.println(ex);
+            //            System.out.println(ex);
             //            ex.printStackTrace();
             return "";
         } // endtry
@@ -293,8 +295,18 @@ public class UpdateUtils implements Constants
             } else {
                 // remote entry is present; check to see if we need to update:
 
+                // double-check versions:
+                BigDecimal rVersion = rfi.getVersion();
+                BigDecimal lVersion = lfi.getVersion();
+                if (rVersion == null) {
+                    throw new IllegalStateException("Remote version information not found");
+                } // endif
+                if (lVersion == null) {
+                    throw new IllegalStateException("Local version information not found");
+                } // endif
+
                 // if remote version newer, mark as update
-                if (rfi.getVersion() > lfi.getVersion()) {
+                if (rVersion.compareTo(lVersion) > 0) {
                     op.setOperation(OperationType.update);
 
                 } else {
@@ -322,7 +334,8 @@ public class UpdateUtils implements Constants
 
             Operation op = new Operation(key);
             op.setRemote(rfi);
-            op.setLocal(rfi.getLocalInfo(localManifest.getBase()));
+            LocalFileInfo localInfo = rfi.getLocalInfo(localManifest.getBase());
+            op.setLocal(localInfo);
             op.setOperation(OperationType.download);
 
             rv.put(key, op);
@@ -369,13 +382,22 @@ public class UpdateUtils implements Constants
         vs.put(DownloadType.required, new ArrayList<Operation>());
         vs.put(DownloadType.critical, new ArrayList<Operation>());
         vs.put(DownloadType.optional, new ArrayList<Operation>());
+        vs.put(null, new ArrayList<Operation>());
 
         Set<Entry<String, Operation>> entries = ops.entrySet();
         for (Entry<String, Operation> entry : entries) {
             String k = entry.getKey();
             if (ids == null || ids.contains(k)) {
                 Operation op = entry.getValue();
-                DownloadType dlt = op.getRemote().getDownloadType();
+                RemoteFileInfo rmt = op.getRemote();
+                DownloadType dlt;
+                if (rmt != null) {
+                    dlt = rmt.getDownloadType();
+
+                } else {
+                    dlt = null;
+                } // endif
+
                 vs.get(dlt).add(op);
             } // endif
         } // endforeach
@@ -397,7 +419,17 @@ public class UpdateUtils implements Constants
         int errorCnt = 0;
 
         for (Operation op : ops) {
-            if (type == DownloadType.all || type == op.getRemote().getDownloadType()) {
+            DownloadType downloadType;
+            RemoteFileInfo remote = op.getRemote();
+
+            if (remote != null) {
+                downloadType = remote.getDownloadType();
+
+            } else {
+                downloadType = null;
+            } // endif
+
+            if (type == DownloadType.all || type == downloadType) {
                 if (!performOperation(cfg, op, l)) {
                     ++errorCnt;
 
@@ -468,24 +500,25 @@ public class UpdateUtils implements Constants
                         postProcessDownload(n, tempf, rfi.getAction());
 
                     } else {
-                        throw new IllegalStateException("("+op.getOperation()+") File verification problem: " + tempf);
+                        throw new IllegalStateException("(" + op.getOperation() + ") File verification problem: "
+                                + tempf);
                     } // endif
                 }
                 break;
-//                case download: {
-//                    // need to:
-//                    // * download to real name
-//                    // * verfiy contents
-//                    insurePathToFileExists(n);
-//                    // todo - set up temporary ops like update above, then call postProc;  in fact, might be able to merge with above...
-//                    dlSize = getFileFromURL(u, n, l);
-//                    if (dlSize > 0 && verifyFile(n)) {
-//                        // no action necessary here.
-//                    } else {
-//                        throw new IllegalStateException("(Download)File verification problem: " + n);
-//                    } // endif
-//                }
-//                break;
+                //                case download: {
+                //                    // need to:
+                //                    // * download to real name
+                //                    // * verfiy contents
+                //                    insurePathToFileExists(n);
+                //                    // todo - set up temporary ops like update above, then call postProc;  in fact, might be able to merge with above...
+                //                    dlSize = getFileFromURL(u, n, l);
+                //                    if (dlSize > 0 && verifyFile(n)) {
+                //                        // no action necessary here.
+                //                    } else {
+                //                        throw new IllegalStateException("(Download)File verification problem: " + n);
+                //                    } // endif
+                //                }
+                //                break;
                 case delete: {
                     // need to:
                     // * delete original
@@ -515,6 +548,7 @@ public class UpdateUtils implements Constants
             if (op.getOperation() != OperationType.nothing) { // no file chgs on nothings...
                 // update config info:
                 // save updated config info:
+                cfg.getLocalManifest().getAllFileInfo().put(lfi.getFileID(), lfi);
                 cfg.getLocalManifest().save();
             } // endif -- not nothing
 
@@ -522,7 +556,7 @@ public class UpdateUtils implements Constants
 
             return true;
 
-       } catch (Exception ex) {
+        } catch (Exception ex) {
             System.out.println("uu:" + ex);
             ex.printStackTrace();
             l.finished(op, false);
@@ -531,19 +565,28 @@ public class UpdateUtils implements Constants
         } // endtry
     }
 
-    private static void postProcessDownload(final File targetFile, File tempFile, PostDownloadActionType action) throws ZipException, IOException {
+    private static void postProcessDownload(final File targetFile, File tempFile, PostDownloadActionType action)
+            throws ZipException, IOException {
         File backf = new File(targetFile.getPath() + ".bak");
         // delete old backup file:
         boolean b = false;
         if (backf.exists()) {
             // backup exists, delete it:
-            b = backf.delete();
+            if (backf.isDirectory()) {
+                // ignore for now
+                b = true;
+
+            } else {
+                b = backf.delete();
+            } // endif
+
             if (!b) {
                 // delete unsuccessful...
                 throw new IllegalStateException("(Update)File delete problem: " + backf);
             } // endif
         } // endif
-        if (targetFile.exists()) {
+
+        if (targetFile.exists() && !targetFile.isDirectory()) {
             // rename original to backup:
             b = targetFile.renameTo(backf);
             if (!b) {
@@ -561,11 +604,18 @@ public class UpdateUtils implements Constants
                     // rename2 unsuccessful...
                     throw new IllegalStateException("(Update)File Rename problem: " + tempFile);
                 } // endif
-            } break;
+            }
+            break;
 
             case unzip: {
                 unzipFileToLocation(tempFile, targetFile);
-            } break;
+                b = tempFile.delete();
+                if (!b) {
+                    // delete2 unsuccessful...
+                    throw new IllegalStateException("(unzip)File delete problem: " + tempFile);
+                } // endif
+            }
+            break;
 
             default:
             break;
@@ -583,10 +633,11 @@ public class UpdateUtils implements Constants
                 File newf = new File(targetFile, ze.getName());
                 insurePathToFileExists(newf);
                 OutputStream zout = new BufferedOutputStream(new FileOutputStream(newf));
-                InputStream zin   = zf.getInputStream(ze);
+                InputStream zin = zf.getInputStream(ze);
                 connectStreams(zin, zout);
             } // endif                
         } // endwhile
+        zf.close();
     }
 
     public static void connectStreams(InputStream in, OutputStream out) throws IOException {
@@ -622,20 +673,25 @@ public class UpdateUtils implements Constants
         try {
             Collection<Operation> ops = cfg.getOperations().values();
             for (Operation op : ops) {
-                if (type == DownloadType.all || type == op.getRemote().getDownloadType()) {
-                    // same type
-                    if (ids == null || ids.contains(op.getFileID())) {
-                        // in vector, or vector null
-                        if (op.getOperation() == OperationType.update || op.getOperation() == OperationType.download) {
-                            total += op.getRemote().getSize();
-                        } // endif
-                    } // endif
-                } // endif
+                RemoteFileInfo rmt = op.getRemote();
+                if (rmt != null) {
+                    if (type == DownloadType.all || type == rmt.getDownloadType()) {
+                        // same type
+                        if (ids == null || ids.contains(op.getFileID())) {
+                            // in vector, or vector null
+                            if (op.getOperation() == OperationType.update
+                                    || op.getOperation() == OperationType.download) {
+                                total += rmt.getSize();
+                            } // endif -- op is update or dl
+                        } // endif -- id filter match
+                    } // endif -- download type match
+                } // endif -- rmt not null
             } // endforeach
 
             return total;
 
         } catch (NullPointerException ex) {
+            ex.printStackTrace();
             return -1;
         } // endtry
     }
@@ -901,16 +957,16 @@ public class UpdateUtils implements Constants
         // TODO implement verifyFile
         return true;
     }
-    
+
     public static Component getRootContainer(Component c) {
         Component parent = c.getParent();
         Component current = c;
-        
+
         while (parent != null) {
             current = parent;
             parent = current.getParent();
         } // endwhile
-        
+
         return current;
     }
 }
