@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!-- ====================================================================== 
+     Sep 12, 2006 12:40:46 PM
+
+     project
+     description
+
+     pforhan
+     ====================================================================== -->
+<project name="cynch" default="help">
+    <description>
+        Build script for the Cynch project
+    </description>
+
+    <!-- ================================= 
+          target: help              
+         ================================= -->
+    <target name="help" description="--> description">
+    </target>
+
+    <target name="build" depends="compile" description="--> description">
+        
+    </target>
+
+    <!-- - - - - - - - - - - - - - - - - - 
+          target: depends                      
+         - - - - - - - - - - - - - - - - - -->
+    <target name="compile">
+        <javac srcdir="src"
+         destdir="dst"
+         classpath="jarfile"
+         debug="on"/>
+    </target>
+
+</project>

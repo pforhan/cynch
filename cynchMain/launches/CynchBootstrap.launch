@@ -5,9 +5,8 @@
 <listEntry value="/cynchMain"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="cynchMain"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="update C:\temp\del\logging\logging-manifest.txt"/>
 <listAttribute key="org.eclipse.debug.core.MAPPED_RESOURCE_TYPES">
 <listEntry value="4"/>
 </listAttribute>
-<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.muddyhorse.cynch.admin.CynchAdmin"/>
+<stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="com.muddyhorse.cynch.CynchBootstrap"/>
 </launchConfiguration>

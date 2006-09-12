@@ -66,14 +66,15 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
         } // endif
     }
 
-    public static void downloadFiles(CynchBootstrap ui, String base, String duSubDir, boolean createDirsAsNeeded,
+    public static void downloadFiles(CynchBootstrap ui, String base, String cynchSubDir, boolean createDirsAsNeeded,
             boolean overwriteExisting) throws SecurityException {
         for (String element : names) {
             if (stopOps) {
-                return;
-            }
+                break;
+            } // endif
+
             if (createDirsAsNeeded || (new File(base)).exists()) {
-                File f = new File(base + duSubDir + element);
+                File f = new File(base + cynchSubDir + element);
                 if (overwriteExisting || !f.exists()) {
                     // if allowed to overwrite, or the file doesn't exist, do it:
                     setStatus(ui, "Checking Path...");
@@ -91,11 +92,11 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
     public static void installAndRun(CynchBootstrap ui, Map<String, String> cfg) throws SecurityException {
         String base = cfg.get(Constants.INI_LOCAL_BASE);
 
-        String dudir = cfg.get(Constants.INI_CYNCH_DIR);
+        String cynchDir = cfg.get(Constants.INI_CYNCH_DIR);
 
         // only install to app directory (since this could have been run from an applet)
         boolean overwrite = false; //!could get setting this from config file...
-        downloadFiles(ui, base, dudir, true, overwrite);
+        downloadFiles(ui, base, cynchDir, true, overwrite);
 
         if (stopOps) {
             return;
@@ -110,38 +111,49 @@ public class CynchBootstrap extends java.applet.Applet implements java.awt.event
         File f = new File(iname);
         setStatus(ui, "Downloading file " + iname);
         if (!f.exists()) {
+            UpdateUtils.insurePathToFileExists(f);
             int byteCount = UpdateUtils.getFileFromClasspath(CynchBootstrap.class,cfg.get(Constants.PARM_INI), f);
             // ...if f did not exist before, save it now...
             if (byteCount == -1) {
                 // error occurred; try default INI name:
                 UpdateUtils.getFileFromClasspath(CynchBootstrap.class,Constants.DEFAULT_INI_NAME, f);
             } // endif
-        }
+        } // endif
 
         if (stopOps) {
             return;
-        }
+        } // endif
+
         // save the starter file here:
         String starter = cfg.get(Constants.INI_START_EXEC_DL);
         String sname = base + starter;
-        f = new File(sname);
-        setStatus(ui, "Downloading file " + sname);
-        if (!f.exists()) {
-            UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + starter, f);
-            // ...if f did not exist before, save it now...
-        }
+        if (starter != null) {
+            f = new File(sname);
+            setStatus(ui, "Downloading file " + sname);
+            if (!f.exists()) {
+                UpdateUtils.getFileFromClasspath(CynchBootstrap.class, "/" + starter, f);
+                // ...if f did not exist before, save it now...
+            }
+        } // endif
 
         //! perhaps install a shortcut here...
         //  but note that running this installer a second time
         //  will simply start things...
         if (stopOps) {
             return;
-        }
+        } // endif
 
-        // start the DU proper...
-        //        DynamicUpdate.main(new String[] {iname}); // updates (to the DU classes) will not apply...
+        // start the cynch proper...
         String startExec = cfg.get(Constants.INI_START_EXEC);
-        UpdateUtils.startApplication(startExec + " " + sname, iname, base);
+        if (startExec != null
+                && starter != null) {
+            UpdateUtils.startApplication(startExec + " " + sname, iname, base);
+
+        } else {
+            // no starter, just use the current cp:
+            // note that updates (to the cynch classes) will not apply...
+            Cynch.main(new String[] {iname});
+        } // endif
 
         /*
          java.awt.Frame fr = new java.awt.Frame("Quick, Dirty test!");
