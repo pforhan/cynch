@@ -178,7 +178,7 @@ public class UpdateTablePanel extends java.awt.Panel implements
     }
 
     private static void buildOpsTable(List<Operation> ops, GridBagConstraints gbc, Panel pnl, ItemListener l) {
-        NumberFormat vnf = new DecimalFormat("#0.00");
+        NumberFormat vnf = new DecimalFormat("#0.0000");
         String[] names = new String[5];
         for (Operation op : ops) {
             boolean useCheck = true;

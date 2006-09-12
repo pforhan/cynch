@@ -308,6 +308,8 @@ public class UpdateUtils implements Constants
                 // if remote version newer, mark as update
                 if (rVersion.compareTo(lVersion) > 0) {
                     op.setOperation(OperationType.update);
+                    LocalFileInfo localInfo = rfi.getLocalInfo(localManifest.getBase());
+                    op.setLocal(localInfo);
 
                 } else {
                     op.setOperation(OperationType.nothing);
@@ -907,18 +909,21 @@ public class UpdateUtils implements Constants
     public static boolean startApplication(String execName, String args, String startDir) {
         // get arguments:
         //        StringTokenizer izer = new StringTokenizer(cfg.get(INI_EXEC_ARGS),"+");
-        String appAndArgs = execName + " " + startDir + " " + args;
+//        String appAndArgs = execName + " " + startDir + " " + args;
         //System.out.println("uu.sA: running: "+appAndArgs);
 
         try {
-            //            Process p = Runtime.getRuntime().exec(appAndArgs, null, new File(startDir));
-            //            Process p = 
-            Runtime.getRuntime().exec(appAndArgs, null);
-            //            System.out.println("done starting application");
-            //            return p.waitFor() == 0;
+            ProcessBuilder pb = new ProcessBuilder(execName, startDir, args);
+            pb.directory(new File(startDir));
+            Process p = pb.start();
+
+            int rc = p.waitFor();
+            System.out.println("rc is "+rc);
+
             return true;
+
         } catch (Exception ex) {
-            System.out.println(ex);
+            ex.printStackTrace();
             return false;
         } // endtry
     }
