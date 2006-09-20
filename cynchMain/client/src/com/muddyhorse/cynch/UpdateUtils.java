@@ -771,13 +771,16 @@ public class UpdateUtils implements Constants
             System.out.println("uu.gFFURL: downloaded " + (available - left) + " of " + available);
             System.out.println("uu.gFFURL: from " + rmt + " to " + local);
             return available - left;
+
         } catch (InterruptedException ix) {
             //System.out.println("uu.gFFURL: caught ix!! @"+System.currentTimeMillis());
             throw ix;
+
         } catch (Exception ex) {
             System.out.println(ex);
             //            ex.printStackTrace();
             return -1;
+
         } finally {
             try {
                 if (is != null) {
@@ -909,7 +912,7 @@ public class UpdateUtils implements Constants
     public static boolean startApplication(String execName, String args, String startDir) {
         // get arguments:
         //        StringTokenizer izer = new StringTokenizer(cfg.get(INI_EXEC_ARGS),"+");
-//        String appAndArgs = execName + " " + startDir + " " + args;
+        //        String appAndArgs = execName + " " + startDir + " " + args;
         //System.out.println("uu.sA: running: "+appAndArgs);
 
         try {
@@ -918,7 +921,7 @@ public class UpdateUtils implements Constants
             Process p = pb.start();
 
             int rc = p.waitFor();
-            System.out.println("rc is "+rc);
+            System.out.println("rc is " + rc);
 
             return true;
 
@@ -978,7 +981,7 @@ public class UpdateUtils implements Constants
     public static Config getMainConfig() {
         return mainConfig;
     }
-    
+
     public static void setMainConfig(Config cfg) {
         mainConfig = cfg;
     }

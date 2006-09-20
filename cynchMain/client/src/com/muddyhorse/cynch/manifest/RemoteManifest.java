@@ -62,7 +62,8 @@ public class RemoteManifest implements Manifest<RemoteFileInfo>
     protected Map<String, String> getRawManifest() {
         Map<String, String> remoteManifest;
         try {
-            String s = UpdateUtils.getStringFromURL(new URL(base, iniName));
+            String s = UpdateUtils.getStringFromURL(new URL(base+"/"+iniName));
+            // note: useing new URL(base, iniName) works for http:// but fails for file:// (on windows, at least)
             remoteManifest = UpdateUtils.stringToHashtable(s);
 
         } catch (MalformedURLException e) {

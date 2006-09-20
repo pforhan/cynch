@@ -46,7 +46,8 @@ public class RemoteFileInfo extends FileInfo
         } else {
             // base must be non-null for us to construct a relative url
             if (base != null) {
-                setPath(new URL(base, rawURL));
+                setPath(new URL(base + "/" + rawURL));
+                // note: useing new URL(base, iniName) works for http:// but fails for file:// (on windows, at least)
 
             } else {
                 throw new IllegalStateException("Unable to construct remote path!");
