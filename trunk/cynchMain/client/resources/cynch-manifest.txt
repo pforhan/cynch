@@ -1,4 +1,0 @@
-/*#dltype,URL,version,size,description,postaction,localPath*/
-CYNCH_00=!,cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511,Cynch 1,nothing,c:\temp\DUConfig.class
-CYNCH_0B=.,http://something.com/cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511,Cynch 0B,unzip,c:\temp\unzip
-CYNCH_0C=?,http://something.com/cynch/com/muddyhorse/cynch/DUConfig.class,1.0,2511,Cynch 0C,unzip,c:\temp\unzip
