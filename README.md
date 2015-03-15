@@ -4,7 +4,7 @@ Cynch is a tiny Java application to distribute/install/update software. The dist
 
 Requirements:
 =============
-User side:
+Client side:
 ----------
 * JRE 1.2+ installed ('java -jar' support)
 * download and launch a 30-KB jar-file containing update information for the target application 
